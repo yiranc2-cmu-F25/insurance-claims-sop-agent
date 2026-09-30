@@ -41,7 +41,7 @@ details are in [docs/design-notes.md](docs/design-notes.md).
 | Bonus: emotion recognition, empathetic explanation of the gate, persuasion, alternatives, escalation only after sustained distress | `services/handoff.py`, `services/verification_reply.py` |
 | Delivery: this repo + Dockerfile, API token via `MODEL_API_KEY`, chat UI showing the phases | `Dockerfile`, `web/` |
 
-Tests: `MEMORY_BACKEND=memory python3 -m pytest -q` (329 tests, no token
+Tests: `MEMORY_BACKEND=memory python3 -m pytest -q` (over 300 tests, no token
 needed), `node --test tests/frontend_verification.test.cjs`, and an opt-in live
 check `python3 -m scripts.smoke_live` against the configured model.
 

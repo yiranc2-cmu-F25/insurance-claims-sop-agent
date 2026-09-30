@@ -104,9 +104,9 @@ session, and "New conversation" deletes it.
 
 ## Verification
 
-- `tests/` – 329 backend tests with simulated model responses (routing,
-  permissions, validation, failure handling) and 11 frontend tests; no token
-  needed.
+- `tests/` – over 300 backend tests with simulated model responses (routing,
+  permissions, validation, failure handling) and a dozen frontend tests; no
+  token needed.
 - `scripts/smoke_live.py` – opt-in scenarios against the configured model in
   disposable sessions (sample caller, emotional pushback, off-topic after
   verification, delegate flow, corrections, email buttons).
