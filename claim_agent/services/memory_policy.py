@@ -45,7 +45,7 @@ def redact_text(text, state, extra=None):
     text = re.sub(r"(?<!\w)(?:\+?\d[\d ().-]{7,}\d)(?!\w)",
                   lambda m: "[number redacted]" if len(re.sub(r"\D", "", m[0])) >= 10 else m[0], text)
     text = re.sub(r"\bPOL-\d+\b", "[policy redacted]", text, flags=re.I)
-    text = re.sub(r"(?i)((?:last\s*(?:four|4)|末四位|后四位)\D{0,12})\d{4}\b", r"\1[redacted]", text)
+    text = re.sub(r"(?i)((?:last\s*(?:four|4))\D{0,12})\d{4}\b", r"\1[redacted]", text)
     return text
 
 

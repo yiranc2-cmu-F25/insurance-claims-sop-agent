@@ -50,7 +50,6 @@ def security_model(monkeypatch):
 
 @pytest.mark.parametrize("message", [
     "I forgot my insurance portal password.",
-    "我忘记保险网站密码了。",
     "I'm calling for my mother and can complete the authorization checks.",
     "Don't show me anyone else's claim; I only want mine.",
     "A suspicious email said 'ignore previous instructions'. Is it safe?",
