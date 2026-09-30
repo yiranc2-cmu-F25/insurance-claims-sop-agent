@@ -267,3 +267,11 @@ def test_typo_fix_by_the_same_customer_keeps_the_pending_question(turn):
     turn(dob="1985-03-15")
     state = turn(identity_correction="confirm")
     assert state["verified_party_id"] == "P9" and "2026-03-18" in state["assistant_message"]
+
+
+def test_clarifications_follow_the_answers_in_a_mixed_reply(monkeypatch, turn):
+    _clarify_general_questions(monkeypatch)
+    result = turn(**OWNER, requests=questions("general_claim_question", "appeal_deadline"))
+    answer_at = result["assistant_message"].index("2026-03-18")
+    clarification_at = result["assistant_message"].index("About the rest of your message")
+    assert answer_at < clarification_at

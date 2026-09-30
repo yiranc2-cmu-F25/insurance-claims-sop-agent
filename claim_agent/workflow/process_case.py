@@ -15,6 +15,7 @@ def process_node(state: ClaimsState) -> ClaimsState:
     queue = list(state.get("pending_requests", []))
     working = dict(state)
     replies = []
+    clarifications = []  # Shown after the answers so a mixed reply reads naturally.
     answers = (list(state.get("discussed_answers", []))
                if state.get("discussed_claim_id") == working.get("selected_claim_id") else [])
     finished = list(state.get("completed_requests", []))
@@ -39,10 +40,10 @@ def process_node(state: ClaimsState) -> ClaimsState:
             if not working.get("assistant_message"):
                 working.update(authorization_node(working))
             if working.get("assistant_message"):
-                replies.append(working["assistant_message"])
+                denied = bool(working.get("authorization_denied"))
+                (replies if denied else clarifications).append(working["assistant_message"])
                 handoff = {k: working[k] for k in ("handoff_status", "handoff_reason") if k in working}
                 completed = False
-                denied = bool(working.get("authorization_denied"))
                 result = {"harness_status": "authorization_denied" if denied else "clarification_needed"}
                 queue[0] = mark_awaiting_caller(queue[0])
                 if denied:
@@ -56,8 +57,8 @@ def process_node(state: ClaimsState) -> ClaimsState:
         result = run_case(working, position=len(answers) + 1, total=planned, other_parts=others)
         calls += result["case_tool_calls"]
         audit.extend(result["audit_events"])
-        replies.append(result["reply"])
         completed = result["harness_status"] == "completed"
+        (clarifications if result["harness_status"] == "clarification_needed" else replies).append(result["reply"])
         if not completed:
             if result["harness_status"] == "clarification_needed":
                 if queue:
@@ -86,6 +87,9 @@ def process_node(state: ClaimsState) -> ClaimsState:
     if expired:
         return {**expired, "pending_requests": state.get("pending_requests", []),
                 "case_tool_calls": calls, "audit_events": audit[-200:]}
+    if clarifications:
+        lead = "About the rest of your message: " if answers and replies else ""
+        replies.append(lead + " ".join(clarifications))
     all_done = completed and not queue
     waiting = [item for item in queue if not item.get("awaiting_caller")]
     if all_done:

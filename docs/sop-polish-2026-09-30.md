@@ -193,3 +193,24 @@ Regression suite: 319 passed.
   so later parts start with the substance instead of a new greeting or apology,
   and a neutral caller gets no apology at all.
 Regression suite: 323 passed.
+
+## Addendum: wording (same day)
+
+- Replies that carry no facts of their own (VERIFY_ID phrasing, conversational
+  turns) now use a separate model instance at temperature 0.7 so the wording
+  varies; every decision, extraction and grounded answer still runs at 0. A
+  stock opener such as "I understand that this situation is frustrating for
+  you." is stripped in code if the model still produces it.
+- Grounded answers lead with the answer, stay to a few sentences, skip filler
+  and apologize only for an angry, frustrated or anxious caller. Each answer to
+  a multi-question message knows its position and the other parts' topics, so
+  later parts start with the substance and no part answers another part's
+  question. A deadline may be mentioned only when the evidence records one;
+  the review prompt treats relative timing ("within a week") as a factual
+  claim.
+- A request whose quoted clause differed from the message only by its end
+  punctuation ("what documents do I need?" against "…do I need, and…") was
+  dropped by the literal source check; the check now tolerates that.
+- In a mixed reply, answers come first and any clarification last, with a
+  lead-in.
+Regression suite: 327 passed.
