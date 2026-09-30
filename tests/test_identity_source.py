@@ -95,12 +95,13 @@ def test_identity_model_never_receives_history_stored_values_or_case_notes(monke
                "case_notes": {"private-case": "private-details"},
                "collected_pii": {"name": "private-name"}}
     result = llm.extract_turn_with_llm(FOLLOWUP, context=context)
-    assert calls[0][0] is IdentityExtraction
-    assert calls[0][1] == {"message": FOLLOWUP, "context": {
+    by_schema = dict(calls)  # the two calls run concurrently; order is not defined
+    assert set(by_schema) == {IdentityExtraction, TurnUnderstanding}
+    assert by_schema[IdentityExtraction] == {"message": FOLLOWUP, "context": {
         "caller_role": "policyholder", "pending_identity_fields": ["dob"],
     }}
-    assert "private-" not in str(calls[0][1])
-    assert calls[1][0] is TurnUnderstanding and calls[1][1]["context"] == context
+    assert "private-" not in str(by_schema[IdentityExtraction])
+    assert by_schema[TurnUnderstanding]["context"] == context
     assert result.id_last4 is None and result.intent == "document_submission"
 
 

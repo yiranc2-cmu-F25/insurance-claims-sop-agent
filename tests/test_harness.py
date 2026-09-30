@@ -243,3 +243,12 @@ def test_a_deadline_may_only_be_mentioned_when_the_evidence_has_one():
         harness._validate_answer(GroundedAnswer(answer="The deadline is within a week.", sources=list(without)), without, "CL-2048")
     with_deadline = {"get_claim_for_action": {"case_id": "CL-2048", "appeal_deadline": "2026-03-18"}}
     harness._validate_answer(GroundedAnswer(answer="The deadline is 2026-03-18.", sources=list(with_deadline)), with_deadline, "CL-2048")
+
+
+def test_actions_without_optional_reads_skip_the_planning_call(monkeypatch, verified_case):
+    planner = Mock(side_effect=AssertionError("no planning call expected"))
+    monkeypatch.setattr(llm, "plan_case_with_llm", planner)
+    result = harness.run_case({**verified_case, "resolved_intent": "payment_question", "authorized_action": "read_claim_amounts",
+                               "selected_claim_id": "CL-2011"})
+    assert result["harness_status"] == "completed" and result["case_tool_calls"] == 2
+    planner.assert_not_called()

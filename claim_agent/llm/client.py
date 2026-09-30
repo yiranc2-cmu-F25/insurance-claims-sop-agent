@@ -1,5 +1,6 @@
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Any, Dict, Optional
 
@@ -82,18 +83,23 @@ def extract_turn_with_llm(text: str, *, context: Optional[Dict[str, Any]] = None
     pending = [field for field in context.get("pending_identity_fields", [])
                if field in set(IDENTITY_FIELDS) | {"id_type"}]
     role = context.get("caller_role", "unknown")
-    identity = structured_call(IdentityExtraction, prompts.EXTRACT_IDENTITY, {
+    identity_payload = {
         "message": text,
         "context": {
             "caller_role": role if role in {"policyholder", "delegate"} else "unknown",
             "pending_identity_fields": pending,
         },
-    })
+    }
+    # The two extractions are independent, so they run concurrently; either failure
+    # still stops the turn. The history-aware model has no identity fields in its schema.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        identity_future = pool.submit(structured_call, IdentityExtraction, prompts.EXTRACT_IDENTITY, identity_payload)
+        understanding_future = pool.submit(structured_call, TurnUnderstanding, prompts.EXTRACT_TURN, {
+            "message": text, "context": context,
+        })
+        identity = identity_future.result()
+        understanding = understanding_future.result()
     updates = source_checked_identity(text, identity, pending_fields=pending)
-    # The history-aware model has no identity/correction fields in its schema.
-    understanding = structured_call(TurnUnderstanding, prompts.EXTRACT_TURN, {
-        "message": text, "context": context,
-    })
     return TurnExtraction(**source_checked_business(text, understanding, identity), **updates)
 
 

@@ -108,14 +108,16 @@ def test_model_adapter_failures_are_sanitized(monkeypatch):
 
 
 def test_real_extractor_passes_email_context(monkeypatch):
-    invoke = Mock(side_effect=[IdentityExtraction(), TurnUnderstanding(scope="in_scope")])
+    # The two extraction calls run concurrently, so answer by prompt rather than by order.
+    invoke = Mock(side_effect=lambda messages: IdentityExtraction() if "Extract only identity" in messages[0][1]
+                  else TurnUnderstanding(scope="in_scope"))
     model = Mock()
     model.with_structured_output.return_value.invoke = invoke
     monkeypatch.setattr(llm, "get_llm", lambda: model)
     answer = llm.extract_turn_with_llm("sounds good", context={"email_offer_pending": True, "phase": "POST_PROCESS"})
     assert "email_consent" not in answer.model_dump()
-    assert "exclusively by UI buttons" in invoke.call_args.args[0][0][1]
-    assert '"email_offer_pending": true' in invoke.call_args.args[0][1][1]
+    business = [c.args[0] for c in invoke.call_args_list if "exclusively by UI buttons" in c.args[0][0][1]]
+    assert len(business) == 1 and '"email_offer_pending": true' in business[0][1][1]
 
 
 def test_early_question_reaches_harness_after_later_identity(monkeypatch):

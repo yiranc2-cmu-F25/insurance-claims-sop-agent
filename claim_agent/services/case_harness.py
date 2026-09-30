@@ -35,6 +35,16 @@ class HarnessBlocked(Exception):
         self.code = code
 
 
+def _required_tools(action):
+    """Fixed SOP prerequisites for an action; never left to the model."""
+    required = ["get_claim_for_action"]
+    if action == "read_claim_amounts":
+        required.append("get_claim_field_definitions")
+    if action == "read_document_guidance":
+        required.append("get_document_guidance_for_claim")
+    return required
+
+
 def _prepare_plan(plan, allowed, action):
     if plan.decision != "execute":
         if plan.tools or plan.followup_topic:
@@ -49,11 +59,7 @@ def _prepare_plan(plan, allowed, action):
     if bool(plan.followup_topic) != ("get_claim_followup_guidance" in plan.tools):
         raise HarnessBlocked("invalid_plan")
     # Fixed SOP prerequisites belong to the harness, not the model's discretion.
-    required = ["get_claim_for_action"]
-    if action == "read_claim_amounts":
-        required.append("get_claim_field_definitions")
-    if action == "read_document_guidance":
-        required.append("get_document_guidance_for_claim")
+    required = _required_tools(action)
     ordered = required + [tool for tool in plan.tools if tool not in required]
     if not set(ordered) <= allowed:
         raise HarnessBlocked("tool_not_allowed")
@@ -143,6 +149,9 @@ def run_case(state, position=1, total=1, other_parts=()):
                 and action in {"read_document_guidance", "read_next_steps"}):
             # Manual-review recovery is a fixed SOP branch, after the same access checks.
             plan = CasePlan(decision="execute", tools=["get_document_guidance_for_claim"], followup_topic=None)
+        elif not (ACTION_TOOLS[action] - set(_required_tools(action))):
+            # Nothing optional to choose for this action: no planning call is needed.
+            plan = CasePlan(decision="execute", tools=[], followup_topic=None)
         else:
             plan = CasePlan.model_validate(llm.plan_case_with_llm(
                 question, intent, ACTION_TOOLS[action],

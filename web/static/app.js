@@ -32,11 +32,11 @@ const SUGGESTIONS = {
     { label: "Why do you need my date of birth?", text: "Why do you need my date of birth? Is it safe to share it here?" },
   ],
   verified: [
-    { label: "Why was my claim denied?", text: "Why was my claim denied?" },
+    { label: "Claim status", text: "What is the status of my claim?" },
+    { label: "Why was it denied?", text: "Why was my claim denied?" },
     { label: "Which documents do I need?", text: "What documents should I send, and what if I cannot get them?" },
     { label: "Appeal deadline", text: "What is the appeal deadline?" },
-    { label: "Next steps", text: "What are my next steps?" },
-    { label: "Payment on CL-2011", text: "For claim CL-2011, how much did the insurer actually pay, and what does net_fee mean?" },
+    { label: "Payments", text: "How much was paid on my claim, and what does net_fee mean?" },
   ],
 };
 
