@@ -3,7 +3,7 @@
 from ..services.case_harness import run_case
 from ..services.handoff import clear_recoverable_offer, emotional_escalation, offer_handoff
 from ..services.email_followup import EMAIL_PROMPT, new_email_offer
-from ..services.request_queue import MAX_PER_TURN, activate_request, mark_awaiting_caller
+from ..services.request_queue import MAX_PER_TURN, TRANSIENT_FAILURES, activate_request, mark_awaiting_caller, mark_retry
 from ..services.verification_session import expire_identity
 from ..services.case_memory import prune_cases, remember_answer
 from .resolve_intent import resolve_node, authorization_node
@@ -63,6 +63,9 @@ def process_node(state: ClaimsState) -> ClaimsState:
             reason = {"llm_unavailable": "service_unavailable", "tool_failed": "tool_failure",
                       "human_required": "unsupported_request"}.get(result["harness_status"], "safety_review")
             handoff = offer_handoff(reason)
+            if queue:
+                # The caller has been told; a later question must not wait behind this item.
+                queue[0] = (mark_retry if result["harness_status"] in TRANSIENT_FAILURES else mark_awaiting_caller)(queue[0])
             break
         answers.append(result["reply"])
         case_memories = remember_answer(case_memories, working, result)

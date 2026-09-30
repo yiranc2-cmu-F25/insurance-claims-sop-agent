@@ -9,6 +9,9 @@ BusinessIntent = Literal[
     "status_inquiry", "denial_question", "document_submission", "appeal_deadline",
     "next_steps", "general_claim_question", "payment_question", "claim_update", "document_upload",
 ]
+INTENT_DOC = (
+    'Business intent. payment_question: any amount paid, expected, allowed or owed, or the meaning of a monetary field such as net_fee, net_pay, allowed_max_amount (also when combined with another money question). status_inquiry: current claim state. denial_question: why a claim was denied. document_submission: which documents are needed, alternatives, how/when to send them. appeal_deadline: the appeal or filing deadline. next_steps: what to do next. claim_update: asking to change, correct or update claim or policy data (address, phone, bank details, coverage, filing an appeal for them). document_upload: asking the assistant itself to upload or attach files. general_claim_question ONLY when no more specific intent applies.'
+)
 
 
 class HintSources(BaseModel):
@@ -21,7 +24,7 @@ class HintSources(BaseModel):
 
 class ClaimQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    intent: BusinessIntent
+    intent: BusinessIntent = Field(description=INTENT_DOC)
     question: str = Field(min_length=1, max_length=800)
     source: Optional[str] = Field(default=None, description="Exact current-message clause asking this question. Never quote history or manufacture a question from an email reply.")
     case_id: Optional[str] = Field(default=None, description="Explicit current-message claim identifier CL-..., NEVER a POL-... policy identifier; null when absent.")
@@ -100,7 +103,7 @@ class TurnUnderstanding(BaseModel):
         "claim_update",
         "document_upload",
         "unknown",
-    ] = "unknown"
+    ] = Field(default="unknown", description=INTENT_DOC + " representative_request: the caller asks for a human. unknown: identity-only, email-only or no business request.")
 
     needs_human_support: bool = False
 

@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timezone
 
 from ..guardrails.policy import DISALLOWED_INTENTS
+from .request_queue import mark_awaiting_caller
 from .verification_session import authentication_is_current
 
 
@@ -27,7 +28,8 @@ REASONS = {
 # Soft offers that later progress (a verification, a validated answer) retires.
 RECOVERABLE_OFFERS = {
     "emotional_support", "verification_refused", "verification_locked", "out_of_scope",
-    "claim_not_found", "service_unavailable", "tool_failure",
+    "claim_not_found", "service_unavailable", "tool_failure", "safety_review",
+    "unsupported_request", "delegate_authorization",
 }
 
 INTENT_LABELS = {
@@ -102,8 +104,11 @@ def handoff_gate(state):
         reply = "This request needs a human claims representative. You can use Transfer to human below."
     else:
         return {}
+    # A request that cannot be served here must not sit in front of the caller's next question.
+    queue = [mark_awaiting_caller(item) if item.get("intent") in DISALLOWED_INTENTS else item
+             for item in state.get("pending_requests", [])]
     return {
-        **offer_handoff(reason), "assistant_message": reply,
+        **offer_handoff(reason), "assistant_message": reply, "pending_requests": queue,
         "authorization_denied": reason == "unsupported_request",
         "messages": state.get("messages", []) + [{"role": "assistant", "content": reply}],
     }

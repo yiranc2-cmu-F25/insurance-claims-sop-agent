@@ -241,3 +241,15 @@ def test_concurrent_clicks_create_one_request():
     with ThreadPoolExecutor(max_workers=4) as pool:
         ids = list(pool.map(click, range(4)))
     assert len(set(ids)) == 1
+
+
+def test_later_answer_clears_a_stale_review_offer(monkeypatch):
+    config = {"configurable": {"thread_id": uuid4().hex}}
+    monkeypatch.setattr(intake, "extract_turn_with_llm", lambda *a, **kw: TurnExtraction(
+        scope="in_scope", name="Margaret Chen", dob="1985-03-15", id_last4="4472", intent="claim_update"))
+    state = graph.invoke({"user_message": "Change my address on the claim."}, config=config)
+    assert state["handoff_reason"] == "unsupported_request"
+    monkeypatch.setattr(intake, "extract_turn_with_llm", lambda *a, **kw: TurnExtraction(
+        scope="in_scope", intent="appeal_deadline", case_id="CL-2048"))
+    state = graph.invoke({"user_message": "What is the appeal deadline for CL-2048?"}, config=config)
+    assert state["harness_status"] == "completed" and state.get("handoff_status", "none") == "none"

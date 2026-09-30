@@ -96,3 +96,39 @@ python3 -m scripts.smoke_live            # spends API credits, at most 40 turns
 The previous container is stopped and kept as
 `insurance-claims-agent-demo-before-sop-polish` for rollback; do not run both
 against the same volume.
+
+## Addendum: delegate workflow check over the HTTP API (same day)
+
+A delegate (authorized representative) run against the live container exposed
+three more problems, all fixed and re-verified with 10/10 checks through
+`/api/chat`, `/api/email-choice` and `/api/email-status` only (probe sessions
+deleted afterwards; no real e-mail):
+
+- A question whose answer was blocked (`output_blocked`) or failed stayed at
+  the head of the backlog and every later question was queued behind it.
+  Failed items are now marked: transient failures (`llm_unavailable`,
+  `tool_failed`) are retried *after* the caller's next question; blocked or
+  denied items are superseded by it. Disallowed requests (`claim_update`,
+  `document_upload`) are marked at the handoff gate for the same reason, and an
+  explicit claim number that matched nothing is not carried into the next
+  question.
+- "For claim CL-2011, how much did the insurer actually pay, and what does
+  net_fee mean?" was classified `general_claim_question`, so the amounts were
+  never read and the composer's answer was (correctly) blocked. The intent
+  fields now carry schema descriptions that define each intent; the same
+  message is classified `payment_question` and answered from the recorded
+  amounts. When the model extracts the same wording twice with a specific and
+  the fallback intent, only the specific one is kept.
+- "Please update her mailing address on the claim" is now `claim_update`
+  (routed to a human) instead of a general question. Offers created by a
+  blocked answer, an unsupported request or a missing delegate grant are
+  retired by a later successful answer.
+
+Scenarios covered: verification with the delegate's own three fields (in one
+message and step by step, including a phone number), the policyholder's
+details refused as delegate identity, CL-2048 denial and appeal deadline,
+CL-2011 amounts and `net_fee` meaning, another customer's claim refused,
+a claim change routed to a human, and the mock summary sent to the
+policyholder's masked e-mail. Grant restrictions (revoked, expired, action or
+claim not listed) remain covered by `tests/test_fixture_workflow.py`.
+Regression suite: 304 passed.

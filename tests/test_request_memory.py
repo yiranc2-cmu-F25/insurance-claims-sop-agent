@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from claim_agent.llm import client as llm
-from claim_agent.llm.schemas import CasePlan, TurnExtraction
+from claim_agent.llm.schemas import CasePlan, GroundedAnswer, TurnExtraction
 from claim_agent.services import verification_session as auth
 from claim_agent.services.email_followup import choose_email
 from claim_agent.services.identity_corrections import apply_identity_input
@@ -190,3 +190,49 @@ def test_clarification_answer_refreshes_the_unclear_question(turn):
     result = turn(case_id="CL-2048")
     assert not result["pending_requests"] and result["harness_status"] == "completed"
     assert result["completed_requests"][-1]["claim_id"] == "CL-2048"
+
+
+def test_transient_failure_is_retried_after_the_next_question_not_before(monkeypatch, turn):
+    original = llm.plan_case_with_llm
+    calls = {"count": 0}
+    def plan(question, intent, allowed):
+        if intent == "denial_question" and calls["count"] == 0:
+            calls["count"] += 1
+            raise llm.LLMUnavailable()
+        return original(question, intent, allowed)
+    monkeypatch.setattr(llm, "plan_case_with_llm", plan)
+    result = turn(**OWNER, requests=questions("denial_question"))
+    assert result["harness_status"] == "llm_unavailable" and result["pending_requests"][0]["retry"]
+    result = turn(requests=questions("appeal_deadline"))
+    assert [q["intent"] for q in result["completed_requests"]] == ["appeal_deadline", "denial_question"]
+    assert not result["pending_requests"] and result["phase"] == "POST_PROCESS"
+
+
+def test_blocked_answer_does_not_block_the_next_question(monkeypatch, turn):
+    monkeypatch.setattr(llm, "compose_case_answer", lambda *a: GroundedAnswer(
+        answer="You will receive 99999.00.", sources=["get_claim_for_action"]))
+    result = turn(**OWNER, requests=questions("status_inquiry"))
+    assert result["harness_status"] == "output_blocked" and result["pending_requests"][0]["awaiting_caller"]
+    monkeypatch.setattr(llm, "compose_case_answer", lambda *a: GroundedAnswer(
+        answer="The appeal deadline is 2026-03-18.", sources=["get_claim_for_action"]))
+    result = turn(requests=questions("appeal_deadline"))
+    assert [q["intent"] for q in result["completed_requests"]] == ["appeal_deadline"]
+    assert not result["pending_requests"] and result["email_offer_pending"]
+
+
+def test_unmatched_claim_number_is_not_carried_into_the_next_question(turn):
+    result = turn(**OWNER, requests=questions("status_inquiry", case_id="CL-3001"))
+    assert "accessible claim" in result["assistant_message"] and "case_id" not in result["intent_hint"]
+    result = turn(requests=[{"intent": "appeal_deadline", "question": "When is the appeal deadline?"}],
+                  case_type="healthcare", status="denied")
+    assert result["completed_requests"][-1]["claim_id"] == "CL-2048" and "2026-03-18" in result["assistant_message"]
+
+
+def test_duplicate_wording_keeps_the_specific_intent_only(turn):
+    text = "For claim CL-2011, how much did the insurer actually pay, and what does net_fee mean?"
+    result = turn(**OWNER, requests=[
+        {"intent": "payment_question", "question": text, "case_id": "CL-2011"},
+        {"intent": "general_claim_question", "question": text, "case_id": "CL-2011"},
+    ])
+    assert [q["intent"] for q in result["completed_requests"]] == ["payment_question"]
+    assert not result["pending_requests"] and result["phase"] == "POST_PROCESS"

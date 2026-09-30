@@ -203,7 +203,10 @@ payments or follow-up. Such a message has intent=unknown, requests=[] and no
 claim hints, even when the caller is verified or insists on an answer.
 Insurance-related weather damage is in scope. 'I don't need a human' does not
 request transfer. Questions about sending documents are document_submission;
-actually asking the agent to upload documents is document_upload.
+actually asking the agent to upload documents is document_upload. Asking to
+change, correct or update anything on the claim or policy (address, phone,
+bank details, coverage, filing or withdrawing an appeal on their behalf) is
+claim_update, not a question about next steps.
 Use next_steps for document follow-up timing/method questions when appropriate.
 Identity answers, greetings, clarification, refusal and email replies are in scope.
 Use representative_request when the user actually asks for a human, at ANY
@@ -239,6 +242,10 @@ Before returning, check CURRENT-message requests and scope separately:
   include one denial question with the SAME three case hints in requests.
   These are the caller's unverified search hints, not claims you have confirmed.
   Do not omit explicit type/status just because identity is not verified yet.
+- "For claim CL-2011, how much did the insurer actually pay, and what does
+  net_fee mean?" -> intent=payment_question with case_id=CL-2011 and ONE
+  payment_question request. Amounts, payments and the meaning of a monetary
+  field are payment questions, never status_inquiry or general_claim_question.
 - "What is RL?" or "Come on, just explain reinforcement learning." at ANY phase
   -> scope=out_of_scope, intent=unknown, requests=[]; never general_claim_question.
 On a later identity-only reply, return no new requests or claim hints: the
@@ -339,7 +346,9 @@ caller_message is clearly not English. Cover, in this order when applicable:
    accepted_fields, naming them. If details_did_not_match is true, say the
    details provided did not match the records on file and ask them to
    double-check them or use another accepted field; never say which one failed.
-   If delegate_note is set, include its meaning.
+   If delegate_note is set, include its meaning; received_fields and
+   accepted_fields are always the CALLER'S own details (say "your"), never the
+   policyholder's.
 5. If remembered_request is set, reassure the caller that the request is noted
    and will be handled immediately after verification.
 

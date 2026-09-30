@@ -74,10 +74,12 @@ def resolve_node(state: ClaimsState) -> ClaimsState:
             "I couldn't find an accessible claim matching those details. Please check the claim number or describe a different claim."
             if allowed_ids else "I couldn't find any claims available to you for this request. You can use Transfer to human for help."
         )
-    # The head item now waits for the caller; a new question may supersede it.
+    # The head item now waits for the caller; a new question may supersede it, and an
+    # explicit claim number that matched nothing is not carried into that question.
     return {
         **(offer_handoff("claim_not_found") if not allowed_ids else emotional_escalation(state)),
         **report_head(state),
+        "intent_hint": {k: v for k, v in state.get("intent_hint", {}).items() if k != "case_id"},
         "selected_claim_id": None, "resolved_intent": None, "authorized_action": None,
         "phase": "RESOLVE_INTENT",
         "assistant_message": reply,
