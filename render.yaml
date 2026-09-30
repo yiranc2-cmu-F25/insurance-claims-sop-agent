@@ -1,0 +1,18 @@
+# Render Blueprint: New -> Blueprint -> pick this repository, then enter MODEL_API_KEY.
+services:
+  - type: web
+    name: insurance-claims-sop-agent
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MODEL_API_KEY
+        sync: false
+      - key: MODEL_NAME
+        value: gpt-4o-mini
+      - key: MEMORY_BACKEND
+        value: memory
+      - key: DEMO_EMAIL_SCENARIO
+        value: default
+      - key: PORT
+        value: "8000"

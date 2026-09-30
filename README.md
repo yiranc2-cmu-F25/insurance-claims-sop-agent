@@ -15,6 +15,11 @@ docker build -t insurance-claims-agent .
 docker run --rm -p 8000:8000 --env-file .env -v insurance-claims-data:/app/data insurance-claims-agent
 ```
 
+**Deploy to Render (free tier):** the repo includes a `render.yaml` blueprint.
+On Render choose *New → Blueprint*, pick this repository and enter
+`MODEL_API_KEY` when prompted. The free instance keeps sessions in memory and
+sleeps after 15 idle minutes, so the first request can take up to a minute.
+
 Open http://127.0.0.1:8000 and click **Use the sample caller** (Margaret Chen,
 policy POL-9921, DOB 1985-03-15, SSN last four 4472, denied healthcare claim
 from January). To run without Docker see [Run locally](#run-locally); design
