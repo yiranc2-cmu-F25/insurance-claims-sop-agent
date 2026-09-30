@@ -35,7 +35,9 @@ def test_correction_requires_confirmation_then_reverifies(turn):
     assert proposed["collected_pii"]["dob"] == "1985-03-16"
     assert proposed["pending_identity_changes"] == {"dob": "1985-03-15"}
     assert "confirm" in proposed["assistant_message"] and not proposed.get("selected_claim_id")
+    assert proposed["new_conversation_suggested"] is True  # offered before verification too
     confirmed = turn(identity_correction="confirm")
+    assert confirmed["new_conversation_suggested"] is False
     assert confirmed["collected_pii"]["dob"] == "1985-03-15"
     assert confirmed["verified_party_id"] == "P9" and confirmed["phase"] == "POST_PROCESS"
     assert not confirmed["pending_identity_changes"]
