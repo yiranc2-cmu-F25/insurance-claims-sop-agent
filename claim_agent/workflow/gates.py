@@ -130,8 +130,8 @@ def format_gate(state: ClaimsState) -> ClaimsState:
     suggest_new = False
     if state.get("pending_identity_changes") and not errors:
         fields = ", ".join(labels.get(field, field) for field in state["pending_identity_changes"])
-        reply = (f"The {fields} has conflicting values. If that was a typo, confirm and I will use the new information; "
-                 "if a different person is now using this chat, please start a new conversation instead.")
+        reply = (f"The {fields} has conflicting values. If that was a typo, confirm and I will use the new information, "
+                 "or repeat the original to keep it; if a different person is now using this chat, please start a new conversation instead.")
         suggest_new = True  # The button is offered in every phase, not only after verification.
     return {
         "assistant_message": reply,

@@ -289,3 +289,15 @@ def test_refused_switch_does_not_keep_the_other_persons_role_declaration(turn):
                  represented_policy_number="POL-9921")
     assert "new conversation" in state["assistant_message"].lower()
     assert state["security_declared_role"] == "policyholder" and state["caller_role"] == "policyholder"
+
+
+def test_repeating_the_original_or_the_correction_settles_a_pending_change(turn):
+    turn(name="Margaret Chen")
+    conflict = turn(name="Ma Tian")
+    assert conflict["pending_identity_changes"] == {"name": "Ma Tian"} and conflict["new_conversation_suggested"]
+    kept = turn(name="Margaret Chen")
+    assert not kept["pending_identity_changes"] and kept["collected_pii"]["name"] == "Margaret Chen"
+    assert "conflicting" not in kept["assistant_message"] and "identity" in kept["assistant_message"]
+    turn(name="Ma Tian")
+    adopted = turn(name="Ma Tian")
+    assert not adopted["pending_identity_changes"] and adopted["collected_pii"]["name"] == "Ma Tian"
