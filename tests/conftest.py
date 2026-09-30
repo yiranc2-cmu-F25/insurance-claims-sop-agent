@@ -20,6 +20,8 @@ def _fake_llm_extraction(text: str, **kwargs) -> TurnExtraction:
         intent = "representative_request"
     elif "update my claim" in lower:
         intent = "claim_update"
+    elif "new claim" in lower:
+        intent = "new_claim"
     elif "upload" in lower or "attach" in lower:
         intent = "document_upload"
     elif "appeal deadline" in lower:

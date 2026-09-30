@@ -16,13 +16,13 @@ const typing = document.getElementById("typing");
 
 const PHASES = ["VERIFY_ID", "RESOLVE_INTENT", "PROCESS_CASE", "POST_PROCESS"];
 const PHASE_HINTS = {
-  VERIFY_ID: "To protect claim details, please share any three of: full name, date of birth, phone number, email address, or the last four digits of your ID. You can also say what you are calling about right away.",
+  VERIFY_ID: "To protect claim details, please share any three of: full name, date of birth, phone number, email address, or the last four digits of the ID on your policy (SSN or national ID). You can also say what you are calling about right away.",
   RESOLVE_INTENT: "Tell me what you need: claim status, the denial reason, documents, the appeal deadline, payments or next steps.",
   PROCESS_CASE: "Looking up the claim and checking the answer against the record.",
   POST_PROCESS: "Ask another question, or choose below whether you would like an email summary.",
 };
 const WELCOME = "Hi, I'm the claims support assistant. I can help with claim status, denial reasons, required documents, appeal deadlines, payments and next steps.\n\n"
-  + "Because claim details are protected, I first need to confirm your identity with any three of: full name, date of birth, phone number, email address, or the last four digits of your ID. "
+  + "Because claim details are protected, I first need to confirm your identity with any three of: full name, date of birth, phone number, email address, or the last four digits of the ID on your policy (SSN or national ID). "
   + "Feel free to tell me what you are calling about at the same time.";
 const SAMPLE_CALLER = "I'm the policyholder. My name is Margaret Chen, policy POL-9921. I'm calling about my denied healthcare claim from January. DOB is 1985-03-15, SSN last four is 4472.";
 const SUGGESTIONS = {

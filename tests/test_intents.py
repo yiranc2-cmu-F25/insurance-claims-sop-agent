@@ -33,3 +33,13 @@ def test_claim_update_is_not_a_self_service_permission():
     )
     assert state["authorization_denied"] is True
     assert "human claims representative" in state["assistant_message"]
+
+
+def test_new_claim_is_routed_to_a_human():
+    state = graph.invoke(
+        {"user_message": _verified_message("I want to file a new claim for a car accident.")},
+        config={"configurable": {"thread_id": "test-new-claim-intent"}},
+    )
+    assert state["authorization_denied"] is True and state["handoff_reason"] == "unsupported_request"
+    assert "human claims representative" in state["assistant_message"]
+    assert state.get("selected_claim_id") is None and state["case_tool_calls"] == 0

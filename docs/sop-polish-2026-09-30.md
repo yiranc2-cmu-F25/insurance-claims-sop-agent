@@ -132,3 +132,33 @@ a claim change routed to a human, and the mock summary sent to the
 policyholder's masked e-mail. Grant restrictions (revoked, expired, action or
 claim not listed) remain covered by `tests/test_fixture_workflow.py`.
 Regression suite: 304 passed.
+
+## Addendum: fixture review (same day)
+
+Reviewing `fixtures/` against today's date and the intent list surfaced three
+gaps, fixed and checked over the HTTP API:
+
+- **Expired deadlines.** Both denied claims carry appeal deadlines earlier than
+  today, but PROCESS_CASE had no notion of "today". `get_claim_for_action` now
+  derives `appeal_deadline_passed` and `as_of` (injectable clock
+  `tools.claims.current_date`) for the actions that expose the deadline; the
+  answer prompt states plainly that the deadline has passed and points to a
+  human for late options, and the email summary marks it "(already passed)".
+  Live: "The appeal deadline ... was 2026-03-18, and that deadline has already
+  passed as of 2026-09-30. ... a human claims representative can review whether
+  any late options exist."
+- **How to appeal.** The guideline fixture gained an `appeal_process` follow-up
+  rule; `read_appeal_deadline` may now read follow-up guidance, and "how do I
+  appeal?" is answered from that text (including that the chat cannot file it).
+- **New claims.** A `new_claim` intent routes "I want to file a new claim" to a
+  human like other unsupported requests; disallowed-request replies now use
+  readable labels ("filing a new claim", "changes to a claim or policy").
+- **National-ID customers.** The identity wording asks for "the last four
+  digits of the ID on your policy (SSN or national ID)" and, after a mismatch,
+  suggests checking the ID type without revealing which type is on file. In
+  practice the extractor rarely tags the ID type, so matching digits verify
+  regardless of the word the caller used.
+
+Regression suite: 309 passed; frontend 11 passed; live probes 7/8 (the one
+"failure" was the probe expecting a mismatch that the extractor does not
+produce).

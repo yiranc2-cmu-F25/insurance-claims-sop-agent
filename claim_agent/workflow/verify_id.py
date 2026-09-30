@@ -15,7 +15,7 @@ IDENTITY_LABELS = {
     "dob": "date of birth",
     "phone": "phone number",
     "email": "email address",
-    "id_last4": "ID last four digits",
+    "id_last4": "last four digits of the ID on your policy (SSN or national ID)",
 }
 DELEGATE_NOTE = (
     " Please use your own identity details, not the policyholder's; "
@@ -40,7 +40,8 @@ def _template_reply(state, refusals, remaining, available):
         )
     return (
         "I couldn't verify those details yet. Please check the information and "
-        "provide another matching identity field, such as your phone, email, or ID last four digits."
+        "provide another matching identity field, such as your phone, email, or the last four digits "
+        "of the ID on your policy (SSN or national ID); the ID type must match the one registered."
     )
 
 

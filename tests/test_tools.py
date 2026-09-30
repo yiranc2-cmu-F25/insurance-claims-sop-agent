@@ -43,3 +43,22 @@ def test_email_tool_requires_explicit_consent():
         consent=False,
     )
     assert result["status"] == "not_sent"
+
+
+def test_appeal_deadline_is_reported_relative_to_today(monkeypatch):
+    from datetime import date
+    from claim_agent.tools import claims
+    monkeypatch.setattr(claims, "current_date", lambda: date(2026, 9, 30))
+    passed = get_claim_for_action("P9", "CL-2048", "read_appeal_deadline")
+    assert passed["appeal_deadline_passed"] is True and passed["as_of"] == "2026-09-30"
+    monkeypatch.setattr(claims, "current_date", lambda: date(2026, 1, 20))
+    still_open = get_claim_for_action("P9", "CL-2048", "read_denial_reason")
+    assert still_open["appeal_deadline_passed"] is False
+    assert "appeal_deadline_passed" not in get_claim_for_action("P9", "CL-2011", "read_claim_status")
+
+
+def test_appeal_process_guidance_comes_from_the_fixture():
+    from claim_agent.guardrails.policy import ACTION_TOOLS
+    text = get_claim_followup_guidance("P9", "CL-2048", "appeal_deadline", "appeal_process")
+    assert text and "CL-2048" in text and "cannot file the appeal" in text
+    assert "get_claim_followup_guidance" in ACTION_TOOLS["read_appeal_deadline"]

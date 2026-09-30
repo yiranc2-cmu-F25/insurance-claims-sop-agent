@@ -54,7 +54,8 @@ def build_email_summary(state, answers, claim=None):
         permitted = True
         record = get_claim_for_action(party, claim_id, "read_appeal_deadline") or {}
         if record.get("appeal_deadline"):
-            steps.append(f"Appeal deadline on file: {record['appeal_deadline']}")
+            steps.append(f"Appeal deadline on file: {record['appeal_deadline']}"
+                         + (" (already passed; a representative can review late options)" if record.get("appeal_deadline_passed") else ""))
     lines += ["", "Follow-up items / next steps:"]
     if steps:
         lines += [f"- {step}" for step in steps]

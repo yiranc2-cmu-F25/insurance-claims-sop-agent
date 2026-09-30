@@ -150,6 +150,18 @@
         "show up in status"
       ],
       "en": "After you upload the missing files for claim {case_id}, there can be a short intake delay before the status reflects the update. If the claim still looks unchanged after a few business days, support can check whether {documents} were attached correctly."
+    },
+    {
+      "topic": "appeal_process",
+      "intent_hints": [
+        "appeal_deadline",
+        "denial_question",
+        "next_steps",
+        "general_claim_question",
+        "status_inquiry"
+      ],
+      "requires_documents": false,
+      "en": "To appeal claim {case_id}, submit a written appeal request that states the claim number, why you disagree with the decision, and any documents the review was missing or that support your position, before the appeal deadline on file. Appeals can be submitted through the member portal or by mail; support can confirm the mailing address. If the appeal deadline on file has already passed, a human claims representative must review whether a late appeal or a new claim is possible. This chat cannot file the appeal for you."
     }
   ],
   "claim_followup_fallback": {

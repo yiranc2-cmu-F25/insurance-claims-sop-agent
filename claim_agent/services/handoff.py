@@ -42,6 +42,7 @@ INTENT_LABELS = {
     "payment_question": "Understand recorded claim payment amounts",
     "claim_update": "Request a claim update",
     "document_upload": "Request document upload assistance",
+    "new_claim": "File a new claim",
     "representative_request": "Speak with a human representative",
 }
 

@@ -8,9 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field
 BusinessIntent = Literal[
     "status_inquiry", "denial_question", "document_submission", "appeal_deadline",
     "next_steps", "general_claim_question", "payment_question", "claim_update", "document_upload",
+    "new_claim",
 ]
 INTENT_DOC = (
-    'Business intent. payment_question: any amount paid, expected, allowed or owed, or the meaning of a monetary field such as net_fee, net_pay, allowed_max_amount (also when combined with another money question). status_inquiry: current claim state. denial_question: why a claim was denied. document_submission: which documents are needed, alternatives, how/when to send them. appeal_deadline: the appeal or filing deadline. next_steps: what to do next. claim_update: asking to change, correct or update claim or policy data (address, phone, bank details, coverage, filing an appeal for them). document_upload: asking the assistant itself to upload or attach files. general_claim_question ONLY when no more specific intent applies.'
+    'Business intent. payment_question: any amount paid, expected, allowed or owed, or the meaning of a monetary field such as net_fee, net_pay, allowed_max_amount (also when combined with another money question). status_inquiry: current claim state. denial_question: why a claim was denied. document_submission: which documents are needed, alternatives, how/when to send them. appeal_deadline: the appeal or filing deadline, or how to appeal. next_steps: what to do next. claim_update: asking to change, correct or update claim or policy data (address, phone, bank details, coverage, filing an appeal for them). document_upload: asking the assistant itself to upload or attach files. new_claim: wants to open, file or submit a brand-new claim or report a new incident. general_claim_question ONLY when no more specific intent applies.'
 )
 
 
@@ -102,6 +103,7 @@ class TurnUnderstanding(BaseModel):
         "representative_request",
         "claim_update",
         "document_upload",
+        "new_claim",
         "unknown",
     ] = Field(default="unknown", description=INTENT_DOC + " representative_request: the caller asks for a human. unknown: identity-only, email-only or no business request.")
 
@@ -140,7 +142,7 @@ CaseTool = Literal["get_claim_for_action", "get_document_guidance_for_claim", "g
 FollowupTopic = Literal[
     "missing_required_material_alternatives", "submission_timing",
     "processing_time_after_submission", "submission_method",
-    "file_format_requirements", "receipt_confirmation",
+    "file_format_requirements", "receipt_confirmation", "appeal_process",
 ]
 
 

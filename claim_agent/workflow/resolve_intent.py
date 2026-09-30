@@ -1,6 +1,6 @@
 """RESOLVE_INTENT: select an owned case and authorize a bounded action."""
 
-from ..guardrails.policy import ALLOWED_ACTIONS, DISALLOWED_INTENTS
+from ..guardrails.policy import ALLOWED_ACTIONS, DISALLOWED_INTENTS, DISALLOWED_LABELS
 from ..guardrails.access import has_access
 from ..services.handoff import emotional_escalation, offer_handoff
 from ..services.request_queue import report_head
@@ -22,7 +22,7 @@ def resolve_node(state: ClaimsState) -> ClaimsState:
     if requested_intent in DISALLOWED_INTENTS:
         action = DISALLOWED_INTENTS[requested_intent]
         reply = (
-            f"I can't complete {action.replace('_', ' ')} through this self-service workflow. "
+            f"I can't handle {DISALLOWED_LABELS.get(action, action.replace('_', ' '))} in this self-service chat. "
             "I can connect you with a human claims representative."
         )
         return {

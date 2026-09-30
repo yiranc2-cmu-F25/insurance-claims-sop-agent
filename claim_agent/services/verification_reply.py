@@ -11,7 +11,7 @@ FIELD_LABELS = {
     "dob": "date of birth",
     "phone": "phone number",
     "email": "email address",
-    "id_last4": "ID last four digits",
+    "id_last4": "last four digits of the ID on your policy (SSN or national ID)",
 }
 FIELD_KEYWORDS = {
     "name": ("name",),

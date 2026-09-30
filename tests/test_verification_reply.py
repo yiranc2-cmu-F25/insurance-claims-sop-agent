@@ -33,7 +33,8 @@ def test_composer_receives_labels_and_counts_but_never_identity_values(monkeypat
     assert facts["received_fields"] == ["full name"] and facts["remaining_fields"] == 2
     assert facts["emotion"] == "angry" and facts["offer_human"] is False
     assert facts["remembered_request"] == "Understand the denial reason"
-    assert facts["accepted_fields"] == ["date of birth", "phone number", "email address", "ID last four digits"]
+    assert facts["accepted_fields"] == ["date of birth", "phone number", "email address",
+                                        "last four digits of the ID on your policy (SSN or national ID)"]
     assert state["assistant_message"].startswith("I hear you") and state["phase"] == "VERIFY_ID"
     assert not state.get("verified_party_id") and state["requested_intent"] == "denial_question"
     assert state.get("handoff_status", "none") == "none" and state["case_tool_calls"] == 0
@@ -81,3 +82,11 @@ def test_acceptable_requires_an_offered_field_and_no_protected_data():
     assert verification_reply.acceptable("The details did not match our records; please double-check them.", [])
     assert not verification_reply.acceptable("Your policy POL-9921 is on file; share your phone.", ["phone"])
     assert not verification_reply.acceptable("Email me at a@b.com with your phone.", ["phone"])
+
+
+def test_template_names_the_id_type_neutrally_after_a_mismatch(monkeypatch):
+    monkeypatch.setattr(llm, "compose_verification_reply", Mock(side_effect=llm.LLMUnavailable()))
+    state = run(monkeypatch, "I'm Ma Tian, DOB 1964-09-10, SSN last four 6688.",
+                name="Ma Tian", dob="1964-09-10", id_last4="6688", id_type="ssn_last4")
+    assert not state.get("verified_party_id")
+    assert "SSN or national ID" in state["assistant_message"] and "national_id" not in state["assistant_message"]

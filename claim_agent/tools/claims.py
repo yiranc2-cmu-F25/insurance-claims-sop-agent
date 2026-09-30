@@ -1,6 +1,7 @@
 """Owned-claim selection and action-scoped field access."""
 
 from calendar import month_name
+from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
 from .fixtures import load_claims, load_claim_schema
@@ -64,21 +65,28 @@ ACTION_FIELDS = {
     },
     "read_denial_reason": {
         "case_id", "case_type", "created_at", "status", "summary", "denial_reason",
-        "documents_needed", "appeal_deadline",
+        "documents_needed", "appeal_deadline", "appeal_deadline_passed", "as_of",
     },
     "read_document_guidance": {
         "case_id", "case_type", "created_at", "status", "summary", "documents_needed"
     },
     "read_appeal_deadline": {
-        "case_id", "case_type", "created_at", "status", "summary", "appeal_deadline"
+        "case_id", "case_type", "created_at", "status", "summary", "appeal_deadline",
+        "appeal_deadline_passed", "as_of",
     },
     "read_next_steps": {
-        "case_id", "case_type", "created_at", "status", "summary", "documents_needed"
+        "case_id", "case_type", "created_at", "status", "summary", "documents_needed",
+        "appeal_deadline", "appeal_deadline_passed", "as_of",
     },
     "read_claim_summary": {
         "case_id", "case_type", "created_at", "status", "summary"
     },
 }
+
+
+def current_date() -> date:
+    """Injectable clock so deadline status is testable."""
+    return date.today()
 
 
 def get_claim_for_action(
@@ -91,7 +99,16 @@ def get_claim_for_action(
     allowed_fields = ACTION_FIELDS.get(action)
     if not claim or not allowed_fields:
         return None
-    return {key: value for key, value in claim.items() if key in allowed_fields}
+    result = {key: value for key, value in claim.items() if key in allowed_fields}
+    # A deadline is a fact relative to today; an expired one must never read as open.
+    if result.get("appeal_deadline") and "appeal_deadline_passed" in allowed_fields:
+        today = current_date()
+        try:
+            result["appeal_deadline_passed"] = date.fromisoformat(str(result["appeal_deadline"])) < today
+            result["as_of"] = today.isoformat()
+        except ValueError:
+            pass
+    return result
 
 
 def get_claim_field_definition(field_name: str) -> Optional[Dict[str, Any]]:

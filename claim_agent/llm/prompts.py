@@ -206,7 +206,9 @@ request transfer. Questions about sending documents are document_submission;
 actually asking the agent to upload documents is document_upload. Asking to
 change, correct or update anything on the claim or policy (address, phone,
 bank details, coverage, filing or withdrawing an appeal on their behalf) is
-claim_update, not a question about next steps.
+claim_update, not a question about next steps. Asking to open, file or submit a
+new claim or to report a new incident is new_claim. Asking how to appeal or
+what an appeal needs is appeal_deadline.
 Use next_steps for document follow-up timing/method questions when appropriate.
 Identity answers, greetings, clarification, refusal and email replies are in scope.
 Use representative_request when the user actually asks for a human, at ANY
@@ -264,7 +266,8 @@ ONLY optional capabilities: document_guidance and followup_topic.
 Set document_guidance=true if document requirements/alternatives/manual options
 are needed and get_document_guidance_for_claim is allowed.
 Set followup_topic only if get_claim_followup_guidance is allowed AND the user
-actually asks that topic. A plain status or denial-reason question has null topic;
+actually asks that topic (appeal_process: how to appeal, what an appeal needs,
+or whether a late appeal is possible). A plain status or denial-reason question has null topic;
 do not add submission timing just because a claim was denied. The harness adds
 the correct tool for the chosen topic; you do not assemble tool names or order.
 Do not invent a topic or try arbitrary arguments. Payment field definitions
@@ -297,7 +300,10 @@ The caller's current emotion is supplied as emotion. If it is not neutral, open
 with one brief, genuine acknowledgement (no repeated apologies, no lecturing),
 then give the facts; emotion never changes facts or permissions.
 If the evidence includes documents_needed or appeal_deadline, present them as
-the concrete next steps. Do not say you cannot share further details when the
+the concrete next steps. appeal_deadline_passed=true means the recorded appeal
+deadline is already in the past as of as_of: say so plainly, never tell the
+caller to appeal by that date, and say a human claims representative can review
+whether any late options exist. When it is false the deadline is still open. Do not say you cannot share further details when the
 caller asked only for what the evidence covers; you may close with one short
 sentence offering related help (documents, appeal deadline, next steps or
 amounts) without promising any outcome.
@@ -346,6 +352,9 @@ caller_message is clearly not English. Cover, in this order when applicable:
    accepted_fields, naming them. If details_did_not_match is true, say the
    details provided did not match the records on file and ask them to
    double-check them or use another accepted field; never say which one failed.
+   The ID last four must belong to the ID registered on the policy (SSN or
+   national ID); when details did not match, suggest checking both the digits
+   and the ID type, without saying which type is on file.
    If delegate_note is set, include its meaning; received_fields and
    accepted_fields are always the CALLER'S own details (say "your"), never the
    policyholder's.

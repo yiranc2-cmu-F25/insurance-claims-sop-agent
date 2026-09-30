@@ -197,6 +197,8 @@ def test_concurrent_button_clicks_only_call_tool_once(monkeypatch, offered_clien
 
 def test_summary_has_status_outcome_discussion_and_next_steps(monkeypatch, offered_client):
     client, offer_id = offered_client
+    from datetime import date
+    monkeypatch.setattr("claim_agent.tools.claims.current_date", lambda: date(2026, 9, 30))
     email = Mock(return_value={"status": "approved", "recipient": "margaret@email.com"})
     monkeypatch.setattr(email_followup, "send_email_summary", email)
     offer = client.get("/api/conversation").json()["email_offer"]
@@ -208,5 +210,6 @@ def test_summary_has_status_outcome_discussion_and_next_steps(monkeypatch, offer
     for part in ("Outcome: Healthcare claim denied", "What we discussed:", "Follow-up items / next steps:",
                  "Documents still needed: pathology report, office note", "Appeal deadline on file: 2026-03-18"):
         assert part in summary
+    assert "already passed" in summary
     assert "m***@email.com" in data["reply"] and "No real email was sent" in data["reply"]
     assert data["email_offer"]["preview"] is None and data["email_offer"]["recipient_masked"] is None

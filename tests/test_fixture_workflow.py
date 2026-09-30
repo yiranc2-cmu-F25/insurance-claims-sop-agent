@@ -235,3 +235,18 @@ def test_identity_email_punctuation_and_id_type_are_not_discarded():
     assert identity.verify_identity(dict(name="Margaret Chen", dob="1985-03-15", email="margaret@em.ail.com"))[0] is None
     assert identity.verify_identity({**OWNER, "id_type": "national_id_last4"})[0] is None
     assert identity.get_delegate_authorization("REP-1", "P9", today=date(2031, 1, 1)) is None
+
+
+def test_expired_deadline_flag_reaches_the_answer_model(monkeypatch, conversation):
+    from datetime import date
+    from claim_agent.tools import claims
+    monkeypatch.setattr(claims, "current_date", lambda: date(2026, 9, 30))
+    seen = {}
+    def compose(question, intent, evidence, *args):
+        seen.update(evidence["get_claim_for_action"])
+        return GroundedAnswer(answer="The recorded appeal deadline of 2026-03-18 has already passed as of 2026-09-30.",
+                              sources=["get_claim_for_action"])
+    monkeypatch.setattr(llm, "compose_case_answer", compose)
+    state = conversation(**OWNER, intent="appeal_deadline", case_id="CL-2048")
+    assert state["harness_status"] == "completed" and seen["appeal_deadline_passed"] is True
+    assert "already passed" in state["email_offer"]["summary"]
