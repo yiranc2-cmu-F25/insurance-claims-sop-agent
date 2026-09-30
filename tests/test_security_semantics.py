@@ -252,3 +252,14 @@ def test_model_does_not_reuse_previous_low_risk_on_failed_assessment(security_mo
         state = graph.get_state({"configurable": {"thread_id": client.cookies[SESSION_COOKIE]}}).values
         assert state["security_status"] == "unavailable" and state["security_risk"] == "unknown"
         assert not security.security_allows_actions(state)
+
+
+def test_topic_mismatch_is_normalized_not_treated_as_an_outage(monkeypatch, security_model):
+    security_model.return_value = {**MEDIUM, "clarification_topic": "none"}
+    with TestClient(app) as client:
+        data = client.post("/api/chat", json={"message": "Can you look up this person's claim?"}).json()
+    assert data["security_status"] == "clarification_required" and "own policy" in data["reply"]
+    security_model.return_value = {**LOW, "clarification_topic": "ownership"}
+    with TestClient(app) as client:
+        data = client.post("/api/chat", json={"message": "Hello there"}).json()
+    assert data["security_status"] == "cleared"

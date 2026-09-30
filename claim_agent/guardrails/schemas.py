@@ -37,6 +37,10 @@ class SecurityAssessment(BaseModel):
         }
         if self.category not in allowed[self.risk] or not self.reason.strip():
             raise ValueError("Invalid security assessment")
-        if (self.risk == "medium") != (self.clarification_topic != "none"):
-            raise ValueError("Clarification topic must match the risk decision")
+        # The topic only selects which clarification to ask; a mismatch is normalized,
+        # never turned into a missing safety decision. Risk/category contradictions still fail.
+        if self.risk == "medium" and self.clarification_topic == "none":
+            self.clarification_topic = "ownership"
+        elif self.risk != "medium":
+            self.clarification_topic = "none"
         return self
