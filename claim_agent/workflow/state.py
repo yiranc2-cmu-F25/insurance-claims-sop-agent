@@ -65,6 +65,7 @@ class ClaimsState(TypedDict, total=False):
     distress_turns: int
     dialogue_act: str
     session_identity: List[str]
+    new_conversation_suggested: bool
     needs_human_support: bool
     handoff_status: str
     handoff_reason: Optional[str]

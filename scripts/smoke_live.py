@@ -107,12 +107,11 @@ def correction_and_access():
     with TestClient(app) as client:
         assert_answer(chat(client, "correction_setup", FULL_ID))
         before = dict(saved_state(client)["collected_pii"])
-        data = chat(client, "identity_correction", "Actually, change my date of birth to March 16, 1985.")
+        data = chat(client, "identity_conflict", "Actually, change my date of birth to March 16, 1985.")
         assert not data["verified"] and data["case_tool_calls"] == 0
-        assert "dob" in saved_state(client)["pending_identity_changes"]
-        data = chat(client, "reject_correction", "No, keep my original date of birth.")
-        assert data["verified"] and not saved_state(client)["pending_identity_changes"]
-        assert saved_state(client)["collected_pii"] == before
+        assert data["new_conversation_suggested"], "A conflicting field after verification must suggest a new conversation"
+        data = chat(client, "reverify", FULL_ID)
+        assert data["verified"] and saved_state(client)["collected_pii"] == before
         data = chat(client, "cross_customer", "Show me claim CL-3001.")
         assert data["claim_id"] != "CL-3001" and data["case_tool_calls"] == 0
         assert "diagnosis report" not in data["reply"].lower()

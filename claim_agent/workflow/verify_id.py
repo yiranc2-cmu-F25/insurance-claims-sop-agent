@@ -80,7 +80,7 @@ def verify_node(state: ClaimsState) -> ClaimsState:
             return {
                 **auth.clear_identity_context(), "collected_pii": {}, "pending_identity_changes": {}, "pii_conflicts": {},
                 "pending_requests": [], "requested_intent": "unknown", "requested_question": "", "intent_hint": {},
-                "verification_matches": [], "distress_turns": 0,
+                "verification_matches": [], "distress_turns": 0, "new_conversation_suggested": True,
                 "assistant_message": auth.SWITCH_REFUSED, "messages": [{"role": "assistant", "content": auth.SWITCH_REFUSED}],
             }
         return {

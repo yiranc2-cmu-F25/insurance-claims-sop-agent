@@ -41,16 +41,15 @@ def test_correction_requires_confirmation_then_reverifies(turn):
     assert not confirmed["pending_identity_changes"]
 
 
-def test_correction_revokes_old_offer_and_rejection_keeps_original(turn):
+def test_conflicting_field_after_verification_revokes_the_offer_until_reverified(turn):
     first = turn(**OWNER, intent="status_inquiry", case_id="CL-2048")
     offer_id = first["email_offer"]["id"]
-    pending = turn(dob="1985-03-16")
-    assert not pending["verified_party_id"] and not pending["email_offer"]
+    refused = turn(dob="1985-03-16")
+    assert not refused["verified_party_id"] and not refused["email_offer"] and refused["new_conversation_suggested"]
     with pytest.raises(ValueError):
-        choose_email(pending, offer_id, "send")
-    rejected = turn(identity_correction="reject")
-    assert rejected["collected_pii"]["dob"] == OWNER["dob"]
-    assert rejected["verified_party_id"] == "P9" and not rejected["pending_identity_changes"]
+        choose_email(refused, offer_id, "send")
+    again = turn(**OWNER)
+    assert again["verified_party_id"] == "P9" and again["collected_pii"]["dob"] == OWNER["dob"]
 
 
 def test_confirm_cannot_accept_a_different_new_proposal_or_reset_failure_budget():
@@ -255,17 +254,16 @@ def test_a_second_person_cannot_take_over_a_verified_conversation(turn):
     assert state["verified_party_id"] == "P9" and "2026-03-18" in state["assistant_message"]
 
 
-def test_same_role_takeover_via_confirmed_correction_is_refused(turn):
+def test_conflicting_identity_after_verification_is_refused_at_once(turn):
     turn(**OWNER, intent="denial_question", case_id="CL-2048")
-    proposed = turn(name="Ma Tian", dob="1964-09-10", id_last4="6688", id_type="national_id_last4")
-    assert proposed["pending_identity_changes"] and not proposed.get("verified_party_id")
-    state = turn(identity_correction="confirm")
+    state = turn(name="Ma Tian")
+    assert "new conversation" in state["assistant_message"].lower() and state["new_conversation_suggested"] is True
+    assert not state["pending_identity_changes"] and not state.get("verified_party_id") and state["case_tool_calls"] == 0
+    state = turn(name="Ma Tian", dob="1964-09-10", id_last4="6688", id_type="national_id_last4", intent="denial_question")
     assert not state.get("verified_party_id") and "new conversation" in state["assistant_message"].lower()
     assert state["case_tool_calls"] == 0 and "diagnosis" not in state["assistant_message"]
-    state = turn(intent="denial_question")
-    assert not state.get("verified_party_id") and state["case_tool_calls"] == 0
     state = turn(**OWNER)
-    assert state["verified_party_id"] == "P9"
+    assert state["verified_party_id"] == "P9" and state["new_conversation_suggested"] is False
 
 
 def test_typo_fix_by_the_same_customer_keeps_the_pending_question(turn):

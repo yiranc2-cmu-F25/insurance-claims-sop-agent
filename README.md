@@ -470,10 +470,12 @@ The demo does not require login. Instead, the server creates a random HTTP-only 
   mismatches; a successful verification or the end of the cooldown resets the
   counter, and switching roles or correcting fields does not. This limit is per
   session and does not replace production cross-session brute-force protection.
-- Changing an already collected identity field stores the candidate value,
-  suspends protected access and asks whether to adopt it. The LLM interprets
-  confirm/cancel; code re-verifies after confirmation. Customer records in the
-  fixtures are never modified.
+- Before verification, changing an already collected identity field stores the
+  candidate value and asks whether to adopt it; the LLM interprets
+  confirm/cancel and code re-verifies. After verification, a conflicting
+  identity field is treated as another person: access is dropped and a new
+  conversation is suggested. Customer records in the fixtures are never
+  modified.
 - Several questions in one message are split by the LLM into separate backlog
   items: at most 5 per message, 10 pending, 3 processed per turn. Each is
   checked for permission and evidence separately; only successfully answered

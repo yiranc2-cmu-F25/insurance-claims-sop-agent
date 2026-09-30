@@ -49,6 +49,7 @@ input:disabled { background: #e9edf2; }
 .panel p { margin: 8px 0 12px; }
 #email-choice { background: #eff8f2; border: 1px solid #c3d8c9; }
 #handoff { background: #edf4ff; border: 1px solid #b6cffa; }
+#new-conversation { background: var(--warn-bg); border: 1px solid #e7cf91; }
 #handoff[data-state="requested"] { background: var(--warn-bg); border-color: #e7cf91; }
 .email-buttons, .handoff-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .email-buttons button, .handoff-buttons button { min-height: 42px; }

@@ -33,4 +33,5 @@ def conversation_payload(state):
             else get_llm_status() == "available"
         ),
         "handoff": public_handoff(state),
+        "new_conversation_suggested": bool(state.get("new_conversation_suggested")),
     }

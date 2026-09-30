@@ -185,3 +185,13 @@ test("a suggestion chip sends the message like the composer and clears the typin
   assert.equal(ui.element("typing").hidden, true);
   assert.equal(ui.element("message").disabled, false);
 });
+
+test("a bound-conversation refusal shows a start-new-conversation button that clears the session", async () => {
+  const ui = await createUI();
+  ui.render({ verified: false, phase: "VERIFY_ID", verification: { remaining_seconds: 0 }, new_conversation_suggested: true });
+  assert.equal(ui.element("new-conversation").hidden, false);
+  ui.state.response = { verified: false, phase: "VERIFY_ID", reply: "Cleared", verification: { expired: false } };
+  await ui.element("start-new-conversation").listeners.click();
+  assert.equal(ui.state.methods.at(-1), "DELETE");
+  assert.equal(ui.element("new-conversation").hidden, true);
+});

@@ -55,7 +55,7 @@ def input_guard(state):
         "security_category": "unknown", "security_reasons": [],
         "llm_error": False, "case_tool_calls": 0, "harness_status": "",
         "authorized_action": None, "resolved_intent": None,
-        "authorization_denied": False,
+        "authorization_denied": False, "new_conversation_suggested": False,
     }
     blocked_replies = {
         "full_ssn": "Please do not send a full SSN. Only provide the last four digits.",

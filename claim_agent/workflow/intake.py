@@ -14,6 +14,18 @@ from .common import append_message
 from .state import ClaimsState
 
 
+def _refuse_other_person(state, extracted):
+    """Drop access and point to a new conversation; the bound caller may verify again."""
+    return {
+        **clear_identity_context(), "collected_pii": {}, "pending_identity_changes": {}, "pii_conflicts": {},
+        "pii_errors": {}, "represented_customer": {}, "pending_requests": [], "requested_intent": "unknown",
+        "requested_question": "", "intent_hint": {}, "llm_available": True, "llm_error": False,
+        "turn_intent": "unknown", "emotion": extracted.emotion, "distress_turns": 0,
+        "security_declared_role": state.get("caller_role", "policyholder"), "new_conversation_suggested": True,
+        "assistant_message": SWITCH_REFUSED, "messages": [{"role": "assistant", "content": SWITCH_REFUSED}],
+    }
+
+
 def capture_turn(state: ClaimsState) -> ClaimsState:
     if state.get("hint_schema_version", 0) < 1:
         state = {**state, "intent_hint": upgrade_legacy_hints(state.get("intent_hint", {})),
@@ -69,14 +81,7 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
         # customer means another person is typing: refuse, drop access, ask for a new conversation.
         new_party = resolve_represented_customer(target) if target and target != previous_target else None
         if role_changed or (new_party and new_party != state["session_identity"][1]):
-            return {
-                **clear_identity_context(), "collected_pii": {}, "pending_identity_changes": {}, "pii_conflicts": {},
-                "pii_errors": {}, "represented_customer": {}, "pending_requests": [], "requested_intent": "unknown",
-                "requested_question": "", "intent_hint": {}, "llm_available": True, "llm_error": False,
-                "turn_intent": "unknown", "emotion": extracted.emotion, "distress_turns": 0,
-                "security_declared_role": state.get("caller_role", "policyholder"),
-                "assistant_message": SWITCH_REFUSED, "messages": [{"role": "assistant", "content": SWITCH_REFUSED}],
-            }
+            return _refuse_other_person(state, extracted)
         if target != previous_target:
             target = dict(previous_target)  # a re-mention of the same customer keeps the verified target
     identity_changed = role_changed or target != previous_target
@@ -135,6 +140,9 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
     pii_errors = validate_pii_formats(turn_pii)
     pii_errors.update({"represented_" + k: v for k, v in validate_pii_formats(target).items()})
     identity_update = apply_identity_input(state, turn_pii, pii_errors, extracted.identity_correction, role_changed)
+    if state.get("session_identity") and identity_update.get("pending_identity_changes"):
+        # After verification a conflicting identity field is not a typo to confirm: it is another person.
+        return _refuse_other_person(state, extracted)
     if identity_update.get("phase"):
         phase = identity_update["phase"]
     try:

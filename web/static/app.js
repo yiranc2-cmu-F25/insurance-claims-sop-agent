@@ -55,6 +55,7 @@ let currentVerified = false;
 
 function updateControls() {
   clearConversationButton.disabled = busy;
+  document.getElementById("start-new-conversation").disabled = busy;
   const paused = handoffStatus === "requested";
   input.disabled = busy || paused;
   sendButton.disabled = busy || paused;
@@ -140,6 +141,7 @@ function renderConversation(data) {
       ? "The previous summary is awaiting approval. You can keep chatting or skip this new offer."
       : "Sending is not currently permitted. Check identity, authorization or safety issues; you can still skip.")
     : "Your choice is only confirmed by clicking a button; typing yes or no in the chat does not send anything.";
+  document.getElementById("new-conversation").hidden = !data.new_conversation_suggested;
   handoffPanel.hidden = handoffStatus === "none";
   handoffPanel.dataset.state = handoffStatus;
   transferButton.hidden = requested;
@@ -243,7 +245,7 @@ function addMessage(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-clearConversationButton.addEventListener("click", async () => {
+async function startNewConversation() {
   if (busy || !window.confirm("Start a new conversation? This deletes the saved conversation, identity details and case notes and cannot be undone.")) return;
   busy = true;
   updateControls();
@@ -263,7 +265,10 @@ clearConversationButton.addEventListener("click", async () => {
     updateControls();
     focusInput();
   }
-});
+}
+
+clearConversationButton.addEventListener("click", startNewConversation);
+document.getElementById("start-new-conversation").addEventListener("click", startNewConversation);
 
 async function refreshConversation() {
   const response = await fetch("/api/conversation", { cache: "no-store" });

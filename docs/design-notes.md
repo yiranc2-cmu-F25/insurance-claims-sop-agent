@@ -50,8 +50,10 @@ is stripped in code if it still appears.
 - A conversation is bound to its first verified caller. A different role, a
   different customer, or a confirmed correction that verifies as someone else
   is refused, current access is dropped, and a new conversation is requested.
-- Corrections to an already collected field are proposed, confirmed, and then
-  re-verified; the customer records in the fixtures are never modified.
+- Before verification, corrections to an already collected field are proposed,
+  confirmed, and then re-verified. After verification, a conflicting field is
+  treated as another person (refused, with a "Start a new conversation" button).
+  The customer records in the fixtures are never modified.
 
 ## Requests, memory and backlog
 
