@@ -238,28 +238,34 @@ def test_duplicate_wording_keeps_the_specific_intent_only(turn):
     assert not result["pending_requests"] and result["phase"] == "POST_PROCESS"
 
 
-def test_a_new_caller_does_not_inherit_the_previous_callers_question(turn):
+def test_a_second_person_cannot_take_over_a_verified_conversation(turn):
     first = turn(**OWNER, intent="denial_question", case_id="CL-2048")
     assert first["phase"] == "POST_PROCESS"
-    # A delegate takes over the same browser session without starting a new conversation.
+    # A delegate starts typing in the same browser conversation.
     state = turn(caller_role="delegate", name="David Chen", dob="2004-06-20", id_last4="6028",
                  represented_policy_number="POL-9921")
-    assert state["verified_party_id"] == "P9" and state["caller_role"] == "delegate"
-    assert state["requested_intent"] == "unknown" and not state["pending_requests"] and state["case_tool_calls"] == 0
-    assert "pathology" not in state["assistant_message"] and "Which would you like to know?" in state["assistant_message"]
-    state = turn(intent="status_inquiry", case_id="CL-2011")
-    assert state["selected_claim_id"] == "CL-2011" and state["harness_status"] == "completed"
+    assert "new conversation" in state["assistant_message"].lower()
+    assert not state.get("verified_party_id") and state["phase"] == "VERIFY_ID" and state["case_tool_calls"] == 0
+    assert state["collected_pii"] == {} and not state["pending_requests"] and state["email_offer"] is None
+    state = turn(caller_role="delegate", name="David Chen", dob="2004-06-20", id_last4="6028",
+                 represented_policy_number="POL-9921")
+    assert not state.get("verified_party_id") and "new conversation" in state["assistant_message"].lower()
+    # The original caller can verify again and continue.
+    state = turn(**OWNER, intent="appeal_deadline", case_id="CL-2048")
+    assert state["verified_party_id"] == "P9" and "2026-03-18" in state["assistant_message"]
 
 
-def test_same_role_takeover_via_confirmed_correction_drops_the_old_question(turn):
+def test_same_role_takeover_via_confirmed_correction_is_refused(turn):
     turn(**OWNER, intent="denial_question", case_id="CL-2048")
     proposed = turn(name="Ma Tian", dob="1964-09-10", id_last4="6688", id_type="national_id_last4")
     assert proposed["pending_identity_changes"] and not proposed.get("verified_party_id")
     state = turn(identity_correction="confirm")
-    assert state["verified_party_id"] == "P12" and state["requested_intent"] == "unknown"
-    assert "diagnosis" not in state["assistant_message"] and state["case_tool_calls"] == 0
+    assert not state.get("verified_party_id") and "new conversation" in state["assistant_message"].lower()
+    assert state["case_tool_calls"] == 0 and "diagnosis" not in state["assistant_message"]
     state = turn(intent="denial_question")
-    assert state["selected_claim_id"] == "CL-3001" and "diagnosis" in state["assistant_message"]
+    assert not state.get("verified_party_id") and state["case_tool_calls"] == 0
+    state = turn(**OWNER)
+    assert state["verified_party_id"] == "P9"
 
 
 def test_typo_fix_by_the_same_customer_keeps_the_pending_question(turn):

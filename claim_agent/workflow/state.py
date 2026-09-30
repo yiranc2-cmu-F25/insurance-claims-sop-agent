@@ -64,7 +64,7 @@ class ClaimsState(TypedDict, total=False):
     emotion: str
     distress_turns: int
     dialogue_act: str
-    prior_party_id: Optional[str]
+    session_identity: List[str]
     needs_human_support: bool
     handoff_status: str
     handoff_reason: Optional[str]

@@ -409,6 +409,10 @@ The demo does not require login. Instead, the server creates a random HTTP-only 
 
 ## Identity lifetime and memory
 
+- A conversation is bound to the first caller who verifies in it. A different
+  role, a different customer, or an identity correction that verifies as another
+  person is refused, current access is dropped, and the caller is asked to start
+  a new conversation; the original caller can verify again to continue.
 - By default, after **15 minutes** idle or **1 hour** since verification, at
   least three matching identity details must be provided again. Ordinary chat
   refreshes the idle timer but cannot extend the one-hour cap. Page reloads,

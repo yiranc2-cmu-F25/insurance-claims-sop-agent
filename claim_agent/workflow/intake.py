@@ -4,6 +4,8 @@ from ..llm.client import LLMUnavailable, extract_turn_with_llm
 from ..guardrails.normalization import normalize_hints, normalize_pii, validate_pii_formats
 from ..guardrails.business_source import upgrade_legacy_hints
 from ..services.handoff import offer_handoff
+from ..services.verification_session import SWITCH_REFUSED, clear_identity_context
+from ..tools.identity import resolve_represented_customer
 from ..services.identity_corrections import apply_identity_input
 from ..services.request_queue import collect_requests
 from ..services.memory_policy import recent_context, redact_text
@@ -61,7 +63,22 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
         if value:
             target[field] = value
     target = normalize_pii(target)
-    identity_changed = role_changed or target != state.get("represented_customer", {})
+    previous_target = state.get("represented_customer", {})
+    if state.get("session_identity"):
+        # The conversation is bound to its first verified caller. A new role or a different
+        # customer means another person is typing: refuse, drop access, ask for a new conversation.
+        new_party = resolve_represented_customer(target) if target and target != previous_target else None
+        if role_changed or (new_party and new_party != state["session_identity"][1]):
+            return {
+                **clear_identity_context(), "collected_pii": {}, "pending_identity_changes": {}, "pii_conflicts": {},
+                "pii_errors": {}, "represented_customer": {}, "pending_requests": [], "requested_intent": "unknown",
+                "requested_question": "", "intent_hint": {}, "llm_available": True, "llm_error": False,
+                "turn_intent": "unknown", "emotion": extracted.emotion, "distress_turns": 0,
+                "assistant_message": SWITCH_REFUSED, "messages": [{"role": "assistant", "content": SWITCH_REFUSED}],
+            }
+        if target != previous_target:
+            target = dict(previous_target)  # a re-mention of the same customer keeps the verified target
+    identity_changed = role_changed or target != previous_target
     reset = {}
     if identity_changed:
         phase = "VERIFY_ID"
@@ -117,9 +134,6 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
     pii_errors = validate_pii_formats(turn_pii)
     pii_errors.update({"represented_" + k: v for k, v in validate_pii_formats(target).items()})
     identity_update = apply_identity_input(state, turn_pii, pii_errors, extracted.identity_correction, role_changed)
-    if identity_update.get("phase") and state.get("verified_party_id"):
-        # A proposed identity change may be a typo fix or a different person; verify_node decides.
-        identity_update["prior_party_id"] = state["verified_party_id"]
     if identity_update.get("phase"):
         phase = identity_update["phase"]
     try:

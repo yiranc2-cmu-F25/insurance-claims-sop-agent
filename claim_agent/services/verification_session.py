@@ -20,6 +20,9 @@ LOCK_SECONDS = _seconds("VERIFICATION_LOCK_SECONDS", 900)
 WARNING_SECONDS = 120
 EXPIRED_REPLY = "For your privacy, identity verification has expired. Please provide three identity details again; I have kept your pending questions."
 LOCKED_REPLY = "There have been too many unsuccessful verification attempts. Please try again after the cooldown or use Transfer to human. Claim details remain protected."
+SWITCH_REFUSED = ("This conversation is verified for one caller, so I can't switch to a different person here. "
+                  "To help someone else, please start a new conversation with the New conversation button; "
+                  "nothing from this conversation carries over. The original caller can verify again to continue.")
 
 
 def authentication_is_current(state):

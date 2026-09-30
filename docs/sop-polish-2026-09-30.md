@@ -214,3 +214,15 @@ Regression suite: 323 passed.
 - In a mixed reply, answers come first and any clarification last, with a
   lead-in.
 Regression suite: 327 passed.
+
+## Addendum: one caller per conversation (same day)
+
+Letting a second person re-verify inside the same browser conversation was
+replaced by a refusal: the first successful verification binds the
+conversation (`session_identity` = caller id + customer id). A later role
+change, a represented customer that resolves to someone else, or a confirmed
+identity correction that verifies as a different caller drops the current
+access, clears the collected identity and backlog, and asks for a new
+conversation. The same customer correcting a typo, or re-mentioning the same
+represented customer, is unaffected, and the original caller can verify again.
+Regression suite: 327 passed.
