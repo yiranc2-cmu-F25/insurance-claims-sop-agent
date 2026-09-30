@@ -7,6 +7,9 @@ understanding and wording, and each model output is validated before it can
 act. It needs an OpenAI-compatible model with JSON-schema structured output;
 without one the UI shows `LLM: Unavailable` and the chat API returns 503.
 
+**Hosted demo:** https://insurance-claims-sop-agent-qmcj.onrender.com (free Render
+instance: it sleeps when idle, so the first request can take up to a minute).
+
 ## Quick start
 
 ```bash
