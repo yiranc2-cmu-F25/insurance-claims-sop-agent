@@ -152,3 +152,36 @@ test("email panel shows the preview and masked recipient only while an offer is 
   assert.equal(ui.element("email-recipient").hidden, true);
   assert.equal(ui.element("email-preview-text").textContent, "");
 });
+
+test("a fresh session greets the visitor and offers identity suggestions", async () => {
+  const ui = await createUI();
+  assert.equal(ui.element("chat").children.length, 1);
+  assert.equal(ui.element("suggestions").hidden, false);
+  assert.equal(ui.element("suggestions").children.length, 3);
+  assert.equal(ui.element("step-VERIFY_ID").dataset.state, "active");
+  assert.match(ui.element("phase-hint").textContent, /three of/);
+  assert.equal(ui.element("badge-identity").dataset.state, "pending");
+});
+
+test("verification advances the steps and switches to claim question suggestions", async () => {
+  const ui = await createUI();
+  ui.render({ ...verified(900), claim_id: "CL-2048" });
+  assert.equal(ui.element("step-VERIFY_ID").dataset.state, "done");
+  assert.equal(ui.element("step-POST_PROCESS").dataset.state, "active");
+  assert.equal(ui.element("badge-identity").dataset.state, "ok");
+  assert.match(ui.element("badge-claim").textContent, /CL-2048/);
+  assert.equal(ui.element("suggestions").children.length, 5);
+  ui.render({ ...verified(900), handoff: { status: "requested", request_id: "DEMO-1" } });
+  assert.equal(ui.element("suggestions").hidden, true);
+});
+
+test("a suggestion chip sends the message like the composer and clears the typing indicator", async () => {
+  const ui = await createUI();
+  ui.state.response = { ...verified(900), reply: "Answer", verification: { remaining_seconds: 900 } };
+  const before = ui.element("chat").children.length;
+  await ui.element("message-node").listeners.click();
+  assert.equal(ui.state.requests.at(-1), "/api/chat");
+  assert.equal(ui.element("chat").children.length, before + 2);
+  assert.equal(ui.element("typing").hidden, true);
+  assert.equal(ui.element("message").disabled, false);
+});

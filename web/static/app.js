@@ -11,6 +11,35 @@ const clearConversationButton = document.getElementById("clear-conversation");
 const emailPanel = document.getElementById("email-choice");
 const emailYesButton = document.getElementById("send-email");
 const emailNoButton = document.getElementById("skip-email");
+const suggestions = document.getElementById("suggestions");
+const typing = document.getElementById("typing");
+
+const PHASES = ["VERIFY_ID", "RESOLVE_INTENT", "PROCESS_CASE", "POST_PROCESS"];
+const PHASE_HINTS = {
+  VERIFY_ID: "To protect claim details, please share any three of: full name, date of birth, phone number, email address, or the last four digits of your ID. You can also say what you are calling about right away.",
+  RESOLVE_INTENT: "Tell me what you need: claim status, the denial reason, documents, the appeal deadline, payments or next steps.",
+  PROCESS_CASE: "Looking up the claim and checking the answer against the record.",
+  POST_PROCESS: "Ask another question, or choose below whether you would like an email summary.",
+};
+const WELCOME = "Hi, I'm the claims support assistant. I can help with claim status, denial reasons, required documents, appeal deadlines, payments and next steps.\n\n"
+  + "Because claim details are protected, I first need to confirm your identity with any three of: full name, date of birth, phone number, email address, or the last four digits of your ID. "
+  + "Feel free to tell me what you are calling about at the same time.";
+const SAMPLE_CALLER = "I'm the policyholder. My name is Margaret Chen, policy POL-9921. I'm calling about my denied healthcare claim from January. DOB is 1985-03-15, SSN last four is 4472.";
+const SUGGESTIONS = {
+  unverified: [
+    { label: "Use the sample caller", text: SAMPLE_CALLER },
+    { label: "I'm Margaret Chen, policy POL-9921", text: "I'm Margaret Chen, the policyholder, policy POL-9921." },
+    { label: "Why do you need my date of birth?", text: "Why do you need my date of birth? Is it safe to share it here?" },
+  ],
+  verified: [
+    { label: "Why was my claim denied?", text: "Why was my claim denied?" },
+    { label: "Which documents do I need?", text: "What documents should I send, and what if I cannot get them?" },
+    { label: "Appeal deadline", text: "What is the appeal deadline?" },
+    { label: "Next steps", text: "What are my next steps?" },
+    { label: "Payment on CL-2011", text: "For claim CL-2011, how much did the insurer actually pay, and what does net_fee mean?" },
+  ],
+};
+
 let emailOffer = {};
 let emailDelivery = {};
 let emailPollTimer = null;
@@ -19,7 +48,10 @@ let verificationWarningSeconds = 120;
 let verificationExpired = false;
 let expiryRefreshPending = false;
 let busy = true;
+let sending = false;
 let handoffStatus = "none";
+let currentPhase = "VERIFY_ID";
+let currentVerified = false;
 
 function updateControls() {
   clearConversationButton.disabled = busy;
@@ -31,12 +63,48 @@ function updateControls() {
   emailYesButton.disabled = busy || paused || !emailOffer.can_send || verificationExpired
     || (verificationDeadline !== null && performance.now() >= verificationDeadline);
   emailNoButton.disabled = busy || paused || !emailOffer.can_skip;
-  input.placeholder = paused ? "Bot paused — choose Return to bot to continue" : "Type a message...";
+  for (const chip of Array.from(suggestions.children || [])) chip.disabled = busy || paused;
+  typing.hidden = !sending;
+  input.placeholder = paused ? "Paused for a human transfer — choose Return to bot to continue" : "Type a message…";
+}
+
+function focusInput() {
+  if (!input.disabled && typeof input.focus === "function") input.focus();
 }
 
 function showError(message = "") {
   serviceError.textContent = message;
   serviceError.hidden = !message;
+}
+
+function renderPhase(data) {
+  currentPhase = PHASES.includes(data.phase) ? data.phase : "VERIFY_ID";
+  currentVerified = Boolean(data.verified);
+  const index = PHASES.indexOf(currentPhase);
+  PHASES.forEach((phase, i) => {
+    document.getElementById("step-" + phase).dataset.state = i < index ? "done" : i === index ? "active" : "todo";
+  });
+  document.getElementById("phase-hint").textContent = PHASE_HINTS[currentPhase];
+  const identity = document.getElementById("badge-identity");
+  identity.textContent = currentVerified ? "Identity verified" : "Identity not verified";
+  identity.dataset.state = currentVerified ? "ok" : "pending";
+  const claim = document.getElementById("badge-claim");
+  claim.hidden = !data.claim_id;
+  claim.textContent = data.claim_id ? "Claim " + data.claim_id : "";
+}
+
+function renderSuggestions() {
+  suggestions.replaceChildren();
+  const items = handoffStatus === "requested" ? [] : (currentVerified ? SUGGESTIONS.verified : SUGGESTIONS.unverified);
+  suggestions.hidden = items.length === 0;
+  items.forEach((item) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = item.label;
+    chip.addEventListener("click", () => sendMessage(item.text));
+    suggestions.appendChild(chip);
+  });
 }
 
 function renderConversation(data) {
@@ -47,7 +115,8 @@ function renderConversation(data) {
   verificationExpired = Boolean(verification.expired);
   expiryRefreshPending = false;
   updateLlmStatus(data.llm_status);
-  status.textContent = `Phase: ${data.phase} · Intent: ${data.intent || "unknown"} · Identity: ${data.verified ? "Verified" : "Not verified"}${data.claim_id ? " · Claim: " + data.claim_id : ""}${data.authorized_action ? " · Action: " + data.authorized_action : ""}${data.harness_status ? " · Harness: " + data.harness_status + " · Tool calls: " + data.case_tool_calls : ""}`;
+  renderPhase(data);
+  status.textContent = `Phase: ${data.phase} · Intent: ${data.intent || "unknown"} · Identity: ${data.verified ? "Verified" : "Not verified"}${data.claim_id ? " · Claim: " + data.claim_id : ""}${data.authorized_action ? " · Action: " + data.authorized_action : ""}${data.harness_status ? " · Harness: " + data.harness_status + " · Tool calls: " + data.case_tool_calls : ""}${data.security_status ? " · Safety: " + data.security_status : ""}`;
   const handoff = data.handoff || { status: "none" };
   handoffStatus = handoff.status;
   const requested = handoffStatus === "requested";
@@ -70,14 +139,14 @@ function renderConversation(data) {
       : emailDelivery.status === "pending"
       ? "The previous summary is awaiting approval. You can keep chatting or skip this new offer."
       : "Sending is not currently permitted. Check identity, authorization or safety issues; you can still skip.")
-    : "Your email choice is only confirmed by clicking a button.";
+    : "Your choice is only confirmed by clicking a button; typing yes or no in the chat does not send anything.";
   handoffPanel.hidden = handoffStatus === "none";
   handoffPanel.dataset.state = handoffStatus;
   transferButton.hidden = requested;
   returnButton.hidden = !requested;
   document.getElementById("handoff-message").textContent = requested
-    ? `Simulated transfer request created: ${handoff.request_id}. The bot is paused. No real representative is connected in this demo.`
-    : `${handoff.reason_text || "A human representative can help with this request."} You can request a transfer or keep chatting with the bot.`;
+    ? `Simulated transfer request created: ${handoff.request_id}. The assistant is paused. No real representative is connected in this demo.`
+    : `${handoff.reason_text || "A human representative can help with this request."} You can request a transfer or keep chatting with the assistant.`;
   const summary = handoff.summary;
   document.getElementById("handoff-details").hidden = !requested || !summary;
   document.getElementById("handoff-summary").textContent = summary ? [
@@ -88,6 +157,7 @@ function renderConversation(data) {
     "Completed: " + (summary.completed_steps.join("; ") || "None"),
     "Discussion: " + (summary.discussed_items.join("\n\n") || "No verified claim discussion included"),
   ].join("\n\n") : "";
+  renderSuggestions();
   updateVerificationWarning();
   updateControls();
   scheduleEmailPoll();
@@ -156,10 +226,10 @@ async function pollEmailApproval() {
 
 function updateLlmStatus(value) {
   const labels = {
-    available: "LLM: Available",
-    configured: "LLM: Configured, not checked",
-    unavailable: "LLM: Unavailable",
-    unknown: "LLM: Checking..."
+    available: "Model: ready",
+    configured: "Model: configured",
+    unavailable: "Model: unavailable",
+    unknown: "Model: checking…"
   };
   document.getElementById("llm-status").textContent = labels[value] || labels.unknown;
   document.getElementById("llm-status").dataset.state = value;
@@ -174,7 +244,7 @@ function addMessage(role, text) {
 }
 
 clearConversationButton.addEventListener("click", async () => {
-  if (busy || !window.confirm("Delete this saved conversation, identity details and case notes? This cannot be undone.")) return;
+  if (busy || !window.confirm("Start a new conversation? This deletes the saved conversation, identity details and case notes and cannot be undone.")) return;
   busy = true;
   updateControls();
   clearTimeout(emailPollTimer);
@@ -184,13 +254,14 @@ clearConversationButton.addEventListener("click", async () => {
     const data = await response.json();
     chat.replaceChildren();
     renderConversation(data);
-    addMessage("assistant", data.reply);
+    addMessage("assistant", data.reply || WELCOME);
     showError();
   } catch (_) {
     showError("Could not confirm deletion. Please refresh and try again.");
   } finally {
     busy = false;
     updateControls();
+    focusInput();
   }
 });
 
@@ -208,13 +279,14 @@ const sessionReady = (async () => {
     const response = await fetch("/api/session", { method: "POST" });
     if (!response.ok) throw new Error("Session unavailable");
     const data = await refreshConversation();
-    if (data.reply) addMessage("assistant", data.reply);
+    addMessage("assistant", data.reply || WELCOME);
   } catch (error) {
     updateLlmStatus("unavailable");
     showError("Could not restore the conversation. Please reload or try again.");
   } finally {
     busy = false;
     updateControls();
+    focusInput();
   }
 })();
 
@@ -237,6 +309,7 @@ async function handoffAction(path) {
   } finally {
     busy = false;
     updateControls();
+    focusInput();
   }
 }
 
@@ -282,6 +355,7 @@ async function chooseEmail(choice) {
   } finally {
     busy = false;
     updateControls();
+    focusInput();
   }
 }
 
@@ -291,11 +365,11 @@ window.addEventListener("focus", () => {
   if (!busy) refreshConversation().catch(() => showError("Could not refresh conversation status."));
 });
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const message = input.value.trim();
+async function sendMessage(text) {
+  const message = (text || "").trim();
   if (!message || busy || handoffStatus === "requested") return;
   busy = true;
+  sending = true;
   showError();
   updateControls();
   try {
@@ -309,13 +383,22 @@ form.addEventListener("submit", async (event) => {
     });
     const data = await response.json();
     if (!data.reply) throw new Error("Service unavailable");
+    sending = false;
     addMessage("assistant", data.reply);
     renderConversation(data);
   } catch (error) {
+    sending = false;
     updateLlmStatus("unavailable");
-    addMessage("assistant", "The service is unavailable. Please try again later.");
+    addMessage("assistant", "The service is unavailable right now. Please try again in a moment.");
   } finally {
     busy = false;
+    sending = false;
     updateControls();
+    focusInput();
   }
+}
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendMessage(input.value);
 });
