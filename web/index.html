@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Insurance Claims SOP Agent</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <h1>Insurance Claims SOP Agent</h1>
+  <button id="clear-conversation" type="button">Clear saved conversation</button>
+  <div id="status">Phase: VERIFY_ID · Identity: Not verified</div>
+  <div id="llm-status" role="status" aria-live="polite">LLM: Checking...</div>
+  <p id="verification-warning" role="status" aria-live="polite" hidden></p>
+  <div id="chat"></div>
+  <section id="email-choice" hidden aria-labelledby="email-title">
+    <h2 id="email-title">Email summary</h2>
+    <p>Would you like a summary of our discussion and next steps sent to the policyholder's registered email?</p>
+    <p>Demo only: no real email or original files will be sent. You can also keep asking questions.</p>
+    <p id="email-recipient" hidden></p>
+    <details id="email-preview" hidden>
+      <summary>Preview what would be sent</summary>
+      <pre id="email-preview-text"></pre>
+    </details>
+    <div class="email-buttons">
+      <button id="send-email" type="button">Yes, send summary</button>
+      <button id="skip-email" type="button">No, skip</button>
+    </div>
+    <p id="email-choice-hint" role="status" aria-live="polite"></p>
+  </section>
+  <p id="email-delivery-status" role="status" aria-live="polite" hidden></p>
+  <section id="handoff" hidden aria-labelledby="handoff-title">
+    <h2 id="handoff-title">Human support</h2>
+    <p id="handoff-message" role="status" aria-live="polite"></p>
+    <button id="transfer-to-human" type="button">Transfer to human</button>
+    <button id="return-to-bot" type="button" hidden>Return to bot</button>
+    <details id="handoff-details" hidden>
+      <summary>Handoff summary</summary>
+      <pre id="handoff-summary"></pre>
+    </details>
+  </section>
+  <p id="service-error" role="alert" hidden></p>
+  <form id="form">
+    <input id="message" autocomplete="off" placeholder="Type a message..." />
+    <button type="submit">Send</button>
+  </form>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

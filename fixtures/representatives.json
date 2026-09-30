@@ -1,0 +1,26 @@
+[
+  {
+    "rep_name": "David Chen",
+    "rep_id": "REP-1",
+    "demo_only": true,
+    "dob": "2004-06-20",
+    "phone": "+12025550141",
+    "email": "david.chen@example.com",
+    "id_type": "ssn_last4",
+    "id_last4": "6028",
+    "relationship": "son",
+    "buyer_name": "Margaret Chen",
+    "buyer_party_id": "P9",
+    "authorization": {
+      "status": "active",
+      "valid_from": "2026-01-01",
+      "expires_at": "2030-12-31",
+      "claim_ids": ["CL-2048", "CL-2011", "CL-1899", "CL-2102"],
+      "actions": [
+        "read_claim_status", "read_denial_reason", "read_document_guidance",
+        "read_appeal_deadline", "read_next_steps", "read_claim_summary",
+        "read_claim_amounts", "send_email_summary"
+      ]
+    }
+  }
+]

@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+langgraph>=0.6.11,<0.7
+langgraph-checkpoint-sqlite>=2.0.11,<3
+cryptography>=42
+langchain-core>=0.3
+langchain-openai>=0.3
+python-dotenv>=1.0
+pytest>=8.0

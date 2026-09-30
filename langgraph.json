@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "insurance_claims": "./claim_agent/agent.py:graph"
+  },
+  "env": "./.env"
+}
+

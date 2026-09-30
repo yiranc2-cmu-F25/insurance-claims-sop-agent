@@ -1,0 +1,41 @@
+body { font-family: system-ui, sans-serif; max-width: 820px; margin: 32px auto; padding: 0 16px; background: #f6f7f9; }
+h1 { margin-bottom: 8px; }
+#clear-conversation { min-height: 36px; margin: 4px 0 14px; background: #364152; }
+#status { color: #555; margin-bottom: 16px; }
+#chat { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; min-height: 420px; }
+.message { padding: 10px 12px; margin: 8px 0; border-radius: 10px; white-space: pre-wrap; }
+.user { background: #e8f0fe; margin-left: 15%; }
+.assistant { background: #f0f0f0; margin-right: 15%; }
+form { display: flex; gap: 8px; margin-top: 12px; }
+input { flex: 1; padding: 12px; border: 1px solid #bbb; border-radius: 8px; }
+button { padding: 0 18px; border: 0; border-radius: 8px; background: #1f6feb; color: white; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+#llm-status { margin-bottom: 12px; }
+#llm-status[data-state="unavailable"] { color: #b42318; }
+#handoff { margin-top: 16px; padding: 18px; border: 1px solid #b6cffa; border-radius: 12px; background: #edf4ff; }
+#handoff h2 { margin: 0 0 8px; font-size: 18px; }
+#handoff p { margin: 8px 0 12px; line-height: 1.5; }
+#handoff button { min-height: 42px; padding: 10px 16px; }
+#handoff[data-state="requested"] { background: #fff8e8; border-color: #e7cf91; }
+#return-to-bot { background: #364152; }
+#handoff-summary { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; }
+#service-error { color: #b42318; }
+#email-choice { margin-top: 16px; padding: 18px; border: 1px solid #c3d8c9; border-radius: 12px; background: #eff8f2; }
+#email-choice h2 { margin: 0 0 8px; font-size: 18px; }
+#email-choice p { margin: 8px 0 12px; line-height: 1.5; }
+.email-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.email-buttons button { min-height: 42px; padding: 10px 16px; }
+#skip-email { background: #364152; }
+input:disabled { background: #e9edf2; }
+[hidden] { display: none !important; }
+#verification-warning {
+  padding: 10px 14px;
+  border: 1px solid #c48a21;
+  border-radius: 8px;
+  background: #fff8e5;
+  color: #654600;
+}
+#email-preview { margin: 8px 0 12px; }
+#email-preview summary { cursor: pointer; }
+#email-preview-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; background: white; border: 1px solid #c3d8c9; border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+#email-recipient { color: #355; }
