@@ -26,15 +26,14 @@ def get_llm_status() -> str:
     return "configured" if _llm_runtime_status == "unknown" else _llm_runtime_status
 
 
-@lru_cache(maxsize=1)
-def get_llm() -> Optional[ChatOpenAI]:
+def _build_llm(temperature: float) -> Optional[ChatOpenAI]:
     api_key = os.getenv("MODEL_API_KEY", "").strip()
     if not api_key:
         return None
     kwargs: Dict[str, Any] = {
         "model": os.getenv("MODEL_NAME") or "gpt-4o-mini",
         "api_key": api_key,
-        "temperature": 0,
+        "temperature": temperature,
         "timeout": 12,
         "max_retries": 0,
     }
@@ -43,11 +42,23 @@ def get_llm() -> Optional[ChatOpenAI]:
     return ChatOpenAI(**kwargs)
 
 
+@lru_cache(maxsize=1)
+def get_llm() -> Optional[ChatOpenAI]:
+    """Deterministic model for every decision and every grounded answer."""
+    return _build_llm(0)
+
+
+@lru_cache(maxsize=1)
+def get_phrasing_llm() -> Optional[ChatOpenAI]:
+    """Slightly varied wording for replies that carry no facts of their own."""
+    return _build_llm(0.7)
+
+
 def structured_call(schema, instructions: str, payload: Dict[str, Any], *, best_effort: bool = False):
     """best_effort calls (pure phrasing) may fail without marking the service unavailable."""
     global _llm_runtime_status
     try:
-        model = get_llm()
+        model = get_phrasing_llm() if best_effort else get_llm()
         if model is None:
             raise LLMUnavailable("LLM unavailable")
         result = model.with_structured_output(
@@ -104,10 +115,10 @@ def plan_case_with_llm(question: str, intent: str, allowed_tools) -> CasePlan:
 
 
 def compose_case_answer(question: str, intent: str, evidence: Dict[str, Any], emotion: str = "neutral",
-                        position: int = 1, total: int = 1) -> GroundedAnswer:
+                        position: int = 1, total: int = 1, other_parts=()) -> GroundedAnswer:
     return structured_call(GroundedAnswer, prompts.COMPOSE_ANSWER, {
         "question": question, "intent": intent, "evidence": evidence, "emotion": emotion,
-        "reply_position": {"index": position, "of": total},
+        "reply_position": {"index": position, "of": total}, "other_parts": list(other_parts),
     })
 
 

@@ -5,6 +5,7 @@ from ..llm import client as llm
 from .memory_policy import redact_text
 
 
+STOCK_OPENER = re.compile(r"^\s*I (?:completely |truly )?understand (?:that )?(?:this|your|the) (?:situation|frustration|concern|process)[^.!]*[.!]\s*", re.I)
 MAX_REPLY_CHARS = 700
 # No other claim/policy identifiers, amounts, contact details, or statements of a claim outcome.
 FORBIDDEN = re.compile(
@@ -37,7 +38,7 @@ def compose_reply(state, fallback):
         return fallback
     facts = conversation_facts(state)
     try:
-        reply = str(llm.compose_conversation_reply(facts).reply).strip()
+        reply = STOCK_OPENER.sub("", str(llm.compose_conversation_reply(facts).reply)).strip()
     except Exception:
         return fallback
     return reply if acceptable(reply, facts["current_claim_id"]) else fallback

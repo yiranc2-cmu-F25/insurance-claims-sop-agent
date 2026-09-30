@@ -20,6 +20,7 @@ FIELD_KEYWORDS = {
     "email": ("email", "e-mail"),
     "id_last4": ("last four", "last 4", "four digits", "last-four"),
 }
+STOCK_OPENER = re.compile(r"^\s*I (?:completely |truly )?understand (?:that )?(?:this|your|the) (?:situation|frustration|concern|process)[^.!]*[.!]\s*", re.I)
 MAX_REPLY_CHARS = 900
 # No claim/policy identifiers, amounts, dates, contact details or completion claims.
 FORBIDDEN = re.compile(
@@ -65,7 +66,7 @@ def acceptable(reply, available):
 def compose_reply(facts, available, fallback):
     """Return the model's wording, or the fixed template when it is unavailable or off-script."""
     try:
-        reply = str(llm.compose_verification_reply(facts).reply).strip()
+        reply = STOCK_OPENER.sub("", str(llm.compose_verification_reply(facts).reply)).strip()
     except Exception:
         return fallback
     return reply if acceptable(reply, available) else fallback

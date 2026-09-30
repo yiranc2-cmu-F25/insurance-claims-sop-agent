@@ -72,6 +72,9 @@ def _validate_answer(answer, evidence, claim_id):
     if set(re.findall(r"\bCL-\d+\b", answer.answer, re.I)) - {claim_id}:
         raise HarnessBlocked("output_blocked")
     serialized = json.dumps(evidence, ensure_ascii=False)
+    # A deadline can be discussed only when the evidence records or mentions one.
+    if re.search(r"\bdeadline", answer.answer, re.I) and not re.search(r"deadline", serialized, re.I):
+        raise HarnessBlocked("output_blocked")
     tokens = r"\b\d+(?:[.,/-]\d+)*\b"
     # Markdown list ordinals are formatting, not amounts, dates or claim facts.
     factual_text = _canonical_dates(re.sub(r"(?m)^[ \t]{0,3}\d{1,3}[.)][ \t]+", "", answer.answer))
@@ -79,7 +82,7 @@ def _validate_answer(answer, evidence, claim_id):
         raise HarnessBlocked("output_blocked")
 
 
-def run_case(state, position=1, total=1):
+def run_case(state, position=1, total=1, other_parts=()):
     """One plan, <=3 reads, one answer, one review; no autonomous retry loop.
 
     position/total describe where this answer sits in a multi-question reply so the
@@ -200,7 +203,7 @@ def run_case(state, position=1, total=1):
             record("tool", "ok", tool, round((monotonic() - started) * 1000))
 
         answer = GroundedAnswer.model_validate(llm.compose_case_answer(
-            question, intent, evidence, state.get("emotion", "neutral"), position, total,
+            question, intent, evidence, state.get("emotion", "neutral"), position, total, other_parts,
         ))
         _validate_answer(answer, evidence, claim_id)
         review = AnswerReview.model_validate(llm.review_case_answer(

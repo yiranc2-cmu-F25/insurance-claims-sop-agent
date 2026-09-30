@@ -232,6 +232,14 @@ def test_answer_position_is_passed_to_the_composer_without_changing_reads(monkey
         seen.append(args)
         return GroundedAnswer(answer="Claim CL-2048 is denied.", sources=["get_claim_for_action"])
     monkeypatch.setattr(llm, "compose_case_answer", compose)
-    result = harness.run_case(verified_case, position=2, total=3)
+    result = harness.run_case(verified_case, position=2, total=3, other_parts=["appeal_deadline"])
     assert result["harness_status"] == "completed" and result["case_tool_calls"] == 1
-    assert seen[-1][1:] == (2, 3)
+    assert seen[-1][1:] == (2, 3, ["appeal_deadline"])
+
+
+def test_a_deadline_may_only_be_mentioned_when_the_evidence_has_one():
+    without = {"get_claim_for_action": {"case_id": "CL-2048", "status": "denied", "documents_needed": ["pathology report"]}}
+    with pytest.raises(harness.HarnessBlocked):
+        harness._validate_answer(GroundedAnswer(answer="The deadline is within a week.", sources=list(without)), without, "CL-2048")
+    with_deadline = {"get_claim_for_action": {"case_id": "CL-2048", "appeal_deadline": "2026-03-18"}}
+    harness._validate_answer(GroundedAnswer(answer="The deadline is 2026-03-18.", sources=list(with_deadline)), with_deadline, "CL-2048")

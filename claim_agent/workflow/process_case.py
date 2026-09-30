@@ -51,7 +51,9 @@ def process_node(state: ClaimsState) -> ClaimsState:
                 continue
             if working.get("selected_claim_id") != previous_claim:
                 answers = []  # An email offer always summarizes its single bound claim.
-        result = run_case(working, position=len(answers) + 1, total=planned)
+        others = [item["intent"] for item in queue[1:planned] if not item.get("awaiting_caller")] if index == 0 else \
+            [item["intent"] for item in queue[1:] if not item.get("awaiting_caller")][:max(0, planned - len(answers) - 1)]
+        result = run_case(working, position=len(answers) + 1, total=planned, other_parts=others)
         calls += result["case_tool_calls"]
         audit.extend(result["audit_events"])
         replies.append(result["reply"])

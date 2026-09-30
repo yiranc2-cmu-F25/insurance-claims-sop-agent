@@ -90,3 +90,10 @@ def test_template_names_the_id_type_neutrally_after_a_mismatch(monkeypatch):
                 name="Ma Tian", dob="1964-09-10", id_last4="6688", id_type="ssn_last4")
     assert not state.get("verified_party_id")
     assert "SSN or national ID" in state["assistant_message"] and "national_id" not in state["assistant_message"]
+
+
+def test_stock_opener_is_stripped_from_model_wording(monkeypatch):
+    monkeypatch.setattr(llm, "compose_verification_reply", lambda facts: Mock(
+        reply="I understand that this situation is frustrating for you. I still need your date of birth or phone number."))
+    state = run(monkeypatch, "This is ridiculous.", name="Margaret Chen", emotion="frustrated")
+    assert state["assistant_message"].startswith("I still need your date of birth")
