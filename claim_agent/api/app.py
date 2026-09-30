@@ -29,6 +29,15 @@ async def lifespan(app):
 
 app = FastAPI(title="Insurance Claims SOP Agent", lifespan=lifespan)
 app.include_router(router)
+
+
+@app.middleware("http")
+async def no_stale_frontend(request, call_next):
+    """The page and its script change with every deploy; browsers must revalidate them."""
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
 
 

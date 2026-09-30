@@ -67,3 +67,10 @@ def test_http_paths_are_unchanged():
         assert data["phase"] == "VERIFY_ID"
         assert not data["verified"] and not data["email_offer"]["pending"]
         assert data["handoff"]["status"] == "none"
+
+
+def test_frontend_files_are_revalidated_on_every_load():
+    with TestClient(app) as client:
+        assert client.get("/").headers["cache-control"] == "no-cache"
+        assert client.get("/static/app.js").headers["cache-control"] == "no-cache"
+        assert "cache-control" not in {k.lower() for k in client.get("/api/health").headers}
