@@ -281,3 +281,11 @@ def test_clarifications_follow_the_answers_in_a_mixed_reply(monkeypatch, turn):
     answer_at = result["assistant_message"].index("2026-03-18")
     clarification_at = result["assistant_message"].index("About the rest of your message")
     assert answer_at < clarification_at
+
+
+def test_refused_switch_does_not_keep_the_other_persons_role_declaration(turn):
+    turn(**OWNER, intent="denial_question", case_id="CL-2048")
+    state = turn(caller_role="delegate", name="David Chen", dob="2004-06-20", id_last4="6028",
+                 represented_policy_number="POL-9921")
+    assert "new conversation" in state["assistant_message"].lower()
+    assert state["security_declared_role"] == "policyholder" and state["caller_role"] == "policyholder"

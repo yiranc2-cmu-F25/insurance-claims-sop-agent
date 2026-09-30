@@ -74,6 +74,7 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
                 "pii_errors": {}, "represented_customer": {}, "pending_requests": [], "requested_intent": "unknown",
                 "requested_question": "", "intent_hint": {}, "llm_available": True, "llm_error": False,
                 "turn_intent": "unknown", "emotion": extracted.emotion, "distress_turns": 0,
+                "security_declared_role": state.get("caller_role", "policyholder"),
                 "assistant_message": SWITCH_REFUSED, "messages": [{"role": "assistant", "content": SWITCH_REFUSED}],
             }
         if target != previous_target:
