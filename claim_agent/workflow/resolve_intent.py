@@ -2,6 +2,7 @@
 
 from ..guardrails.policy import ALLOWED_ACTIONS, DISALLOWED_INTENTS, DISALLOWED_LABELS
 from ..guardrails.access import has_access
+from ..services.conversation_reply import compose_reply
 from ..services.handoff import emotional_escalation, offer_handoff
 from ..services.request_queue import report_head
 from ..tools import select_claim, get_claims_for_party
@@ -34,11 +35,12 @@ def resolve_node(state: ClaimsState) -> ClaimsState:
         }
 
     if requested_intent == "unknown":
+        menu = "I can help with claim status, denial reasons, required documents, appeal deadlines, or next steps. Which would you like to know?"
         reply = (
             "The language model is unavailable, so I cannot safely interpret this request. "
             "Please try again later or contact a human claims representative."
             if not state.get("llm_available")
-            else "I can help with claim status, denial reasons, required documents, appeal deadlines, or next steps. Which would you like to know?"
+            else compose_reply(state, menu)
         )
         return {
             "phase": "RESOLVE_INTENT",

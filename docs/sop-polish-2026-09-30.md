@@ -162,3 +162,17 @@ gaps, fixed and checked over the HTTP API:
 Regression suite: 309 passed; frontend 11 passed; live probes 7/8 (the one
 "failure" was the probe expecting a mismatch that the extractor does not
 produce).
+
+## Addendum: conversational turns after verification (same day)
+
+A verified caller who asked "Why do you need my date of birth? Is it safe?"
+received only the fixed email instruction, because POST_PROCESS treated any
+non-claim message as "nothing to do". `services/conversation_reply.py` now
+phrases in-scope non-claim turns (thanks, greetings, process questions) from
+state facts only — phase, verified flag, role, current claim id, whether an
+email offer is pending — with the redacted message. The wording is rejected if
+it contains any other claim/policy identifier, digits, an e-mail address or a
+statement of a claim outcome, and the fixed instruction (email prompt or the
+topic menu in RESOLVE_INTENT) always follows or replaces it. Email replies
+("yes, send it") never reach this composer, so consent stays button-only.
+Regression suite: 319 passed.

@@ -158,6 +158,7 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
         "llm_error": False,
         "emotion": extracted.emotion,
         "distress_turns": distress_turns,
+        "dialogue_act": extracted.dialogue_act,
         "needs_human_support": extracted.needs_human_support,
         "scope": extracted.scope,
         "assistant_message": "Your pending questions have been cleared. What would you like to discuss?" if extracted.request_mode == "cancel" else "",

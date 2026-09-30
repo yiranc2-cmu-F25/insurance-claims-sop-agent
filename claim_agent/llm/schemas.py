@@ -179,3 +179,9 @@ class VerificationReply(BaseModel):
     """Phrasing only: the verification decision and every fact come from code."""
     model_config = ConfigDict(extra="forbid")
     reply: str = Field(min_length=1, max_length=900)
+
+
+class ConversationReply(BaseModel):
+    """Phrasing for in-scope small talk and process questions; it may state no claim fact."""
+    model_config = ConfigDict(extra="forbid")
+    reply: str = Field(min_length=1, max_length=700)

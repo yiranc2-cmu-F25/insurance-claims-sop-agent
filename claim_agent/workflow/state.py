@@ -63,6 +63,7 @@ class ClaimsState(TypedDict, total=False):
 
     emotion: str
     distress_turns: int
+    dialogue_act: str
     needs_human_support: bool
     handoff_status: str
     handoff_reason: Optional[str]

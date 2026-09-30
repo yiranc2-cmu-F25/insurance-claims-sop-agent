@@ -1,6 +1,7 @@
 """POST_PROCESS: handle follow-up questions; email decisions use API buttons."""
 
 from ..guardrails.policy import ALLOWED_ACTIONS, DISALLOWED_INTENTS
+from ..services.conversation_reply import compose_reply
 from ..services.email_followup import EMAIL_PROMPT
 from .common import append_message
 from .state import ClaimsState
@@ -32,11 +33,14 @@ def post_process_node(state: ClaimsState) -> ClaimsState:
         }
 
     if not state.get("email_offer_pending"):
-        reply = (
+        instruction = (
             "Demo: email approval is still pending. No real email was sent. You can keep asking claim questions."
             if (state.get("email_delivery") or {}).get("status") == "pending"
             else "The email choice is already complete. You can ask another claim question."
         )
     else:
-        reply = EMAIL_PROMPT
+        instruction = EMAIL_PROMPT
+    # A thank-you or a process question deserves an answer; the instruction always follows it.
+    answer = compose_reply(state, "")
+    reply = f"{answer}\n\n{instruction}" if answer else instruction
     return {"assistant_message": reply, "messages": append_message(state, reply)}

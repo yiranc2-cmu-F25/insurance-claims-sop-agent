@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from .schemas import AnswerReview, CasePlan, CaseReadOptions, GroundedAnswer, IdentityExtraction, TurnExtraction, TurnUnderstanding, VerificationReply
+from .schemas import AnswerReview, CasePlan, CaseReadOptions, ConversationReply, GroundedAnswer, IdentityExtraction, TurnExtraction, TurnUnderstanding, VerificationReply
 from ..guardrails.identity_source import IDENTITY_FIELDS, source_checked_identity
 from ..guardrails.business_source import source_checked_business
 from . import prompts
@@ -112,6 +112,11 @@ def compose_case_answer(question: str, intent: str, evidence: Dict[str, Any], em
 def compose_verification_reply(facts: Dict[str, Any]) -> VerificationReply:
     """Words only: facts, options and the verification decision are fixed by code."""
     return structured_call(VerificationReply, prompts.COMPOSE_VERIFICATION_REPLY, {"facts": facts}, best_effort=True)
+
+
+def compose_conversation_reply(facts: Dict[str, Any]) -> ConversationReply:
+    """Words for non-claim turns after routing; claim facts still come only from tools."""
+    return structured_call(ConversationReply, prompts.COMPOSE_CONVERSATION_REPLY, {"facts": facts}, best_effort=True)
 
 
 def review_case_answer(question: str, answer: str, evidence: Dict[str, Any]) -> AnswerReview:
