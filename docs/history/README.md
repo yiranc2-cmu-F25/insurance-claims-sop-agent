@@ -1,0 +1,1 @@
+Working notes kept as evidence of how the agent was tested and repaired during development. They describe intermediate builds; the current design is summarized in [../design-notes.md](../design-notes.md).

@@ -1,12 +1,41 @@
 # Insurance Claims SOP Agent
 
-A minimal LangGraph demo for a claims support workflow:
+A claims-support chat agent that follows a fixed four-phase SOP
+(`VERIFY_ID -> RESOLVE_INTENT -> PROCESS_CASE -> POST_PROCESS`) while
+conversing naturally. Code owns the workflow and every gate; the LLM owns
+understanding and wording, and each model output is validated before it can
+act. It needs an OpenAI-compatible model with JSON-schema structured output;
+without one the UI shows `LLM: Unavailable` and the chat API returns 503.
 
-```text
-VERIFY_ID -> RESOLVE_INTENT -> PROCESS_CASE -> POST_PROCESS
+## Quick start
+
+```bash
+cp .env.example .env        # set MODEL_API_KEY (default model: gpt-4o-mini; MODEL_BASE_URL optional)
+docker build -t insurance-claims-agent .
+docker run --rm -p 8000:8000 --env-file .env -v insurance-claims-data:/app/data insurance-claims-agent
 ```
 
-The app requires an OpenAI-compatible LLM with structured-output support. The LLM interprets identity fields, intent, scope, emotion and claim hints. Email consent comes only from UI buttons. Business permissions, identity matching and phase transitions stay in code. Without a working model, the UI shows `LLM: Unavailable` and the chat API returns 503; it does not guess the request or query claims.
+Open http://127.0.0.1:8000 and click **Use the sample caller** (Margaret Chen,
+policy POL-9921, DOB 1985-03-15, SSN last four 4472, denied healthcare claim
+from January). To run without Docker see [Run locally](#run-locally); design
+details are in [docs/design-notes.md](docs/design-notes.md).
+
+## Assignment coverage
+
+| Requirement | Where |
+| --- | --- |
+| Four phases in a fixed order, transitions decided by code | `claim_agent/workflow/graph.py` |
+| VERIFY_ID: no claim detail before three PII fields match; partial answers, clarification questions, refusals and alternative fields handled conversationally | `workflow/verify_id.py`, `services/verification_reply.py` |
+| RESOLVE_INTENT / PROCESS_CASE: messy language resolved to a bounded path; answers only from tool data, at most three reads, mechanical checks plus an independent review | `workflow/resolve_intent.py`, `services/case_harness.py` |
+| POST_PROCESS: email summary (status/outcome, what was discussed, next steps) sent or skipped by button only | `services/email_followup.py` |
+| Out-of-scope questions declined politely; a human offered after repeats | `workflow/gates.py` |
+| Memory across phases: hints given during verification are used afterwards; several questions per message are queued | `workflow/intake.py`, `services/request_queue.py` |
+| Bonus: emotion recognition, empathetic explanation of the gate, persuasion, alternatives, escalation only after sustained distress | `services/handoff.py`, `services/verification_reply.py` |
+| Delivery: this repo + Dockerfile, API token via `MODEL_API_KEY`, chat UI showing the phases | `Dockerfile`, `web/` |
+
+Tests: `MEMORY_BACKEND=memory python3 -m pytest -q` (329 tests, no token
+needed), `node --test tests/frontend_verification.test.cjs`, and an opt-in live
+check `python3 -m scripts.smoke_live` against the configured model.
 
 ## Project structure
 
