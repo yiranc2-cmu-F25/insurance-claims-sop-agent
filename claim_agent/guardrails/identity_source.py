@@ -21,7 +21,12 @@ def current_source(message, value):
     value = value.strip()
     if any(marker in value.casefold() for marker in REDACTION_MARKERS):
         return False
-    return re.search(r"(?<![\w-])" + re.escape(value) + r"(?![\w-])", message) is not None
+    if re.search(r"(?<![\w-])" + re.escape(value) + r"(?![\w-])", message):
+        return True
+    # A quoted clause may carry its own end punctuation ("what documents do I need?")
+    # while the message continues with a comma; the words must still be literal.
+    core = value.rstrip("?.!,;:").strip()
+    return bool(core) and core != value and re.search(r"(?<![\w-])" + re.escape(core) + r"(?![\w-])", message) is not None
 
 
 def source_checked_identity(message, extracted, *, pending_fields=()):

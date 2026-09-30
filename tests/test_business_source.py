@@ -132,3 +132,17 @@ def test_legacy_bad_hints_are_removed_from_active_and_pending_memory(monkeypatch
     assert result["intent_hint"] == {"month": "January"}
     assert result["pending_requests"][0]["hints"] == {"month": "January"}
     assert result["hint_schema_version"] == 1
+
+
+def test_source_with_different_end_punctuation_still_binds_to_the_message():
+    from claim_agent.guardrails.business_source import source_checked_business
+    from claim_agent.llm.schemas import ClaimQuestion, IdentityExtraction, TurnUnderstanding
+    message = "For claim CL-2048, what documents do I need, and what is the appeal deadline?"
+    understanding = TurnUnderstanding(intent="document_submission", scope="in_scope", requests=[
+        ClaimQuestion(intent="document_submission", question="what documents do I need?", source="what documents do I need?", case_id="CL-2048"),
+        ClaimQuestion(intent="appeal_deadline", question="what is the appeal deadline?", source="what is the appeal deadline?", case_id="CL-2048"),
+        ClaimQuestion(intent="payment_question", question="how much was paid?", source="how much was paid?", case_id="CL-2048"),
+    ])
+    data = source_checked_business(message, understanding, IdentityExtraction())
+    assert [q["intent"] for q in data["requests"]] == ["document_submission", "appeal_deadline"]
+    assert data["requests"][0]["question"] == "what documents do I need?"
