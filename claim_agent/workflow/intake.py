@@ -75,6 +75,7 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
             "discussed_answers": [], "email_offer": None,
             "email_offer_pending": False, "email_result": None,
             "email_consent": None, "email_delivery": None,
+            "discussed_claim_id": None, "distress_turns": 0,
         }
     turn_pii = {
         field: getattr(extracted, field)
@@ -101,18 +102,24 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
             "grounded_claim": None, "discussed_answers": [], "email_offer": None,
             "email_offer_pending": False, "email_result": None, "email_consent": None,
         })
+    # A previous caller's remembered request never carries over to a new caller.
+    remembered_intent = "unknown" if switching_customer else state.get("requested_intent", "unknown")
+    remembered_question = "" if switching_customer else state.get("requested_question", "")
     requested_intent = extracted.intent
     if requested_intent == "representative_request":
-        requested_intent = state.get("requested_intent", "unknown")
+        requested_intent = remembered_intent
     # Remember an early request while identity/case clarification is completed.
     if requested_intent == "unknown" and (
         phase == "VERIFY_ID" or incoming_hints or extracted.new_case or (phase == "RESOLVE_INTENT" and turn_pii)
     ):
-        requested_intent = state.get("requested_intent", "unknown")
+        requested_intent = remembered_intent
 
     pii_errors = validate_pii_formats(turn_pii)
     pii_errors.update({"represented_" + k: v for k, v in validate_pii_formats(target).items()})
     identity_update = apply_identity_input(state, turn_pii, pii_errors, extracted.identity_correction, role_changed)
+    if identity_update.get("phase") and state.get("verified_party_id"):
+        # A proposed identity change may be a typo fix or a different person; verify_node decides.
+        identity_update["prior_party_id"] = state["verified_party_id"]
     if identity_update.get("phase"):
         phase = identity_update["phase"]
     try:
@@ -150,7 +157,7 @@ def capture_turn(state: ClaimsState) -> ClaimsState:
         "hint_schema_version": 1,
         "turn_intent": extracted.intent,
         "requested_intent": requested_intent,
-        "requested_question": "" if extracted.request_mode == "cancel" else (queue[0]["question"] if queue else (text if extracted.intent not in {"unknown", "representative_request"} else state.get("requested_question", ""))),
+        "requested_question": "" if extracted.request_mode == "cancel" else (queue[0]["question"] if queue else (text if extracted.intent not in {"unknown", "representative_request"} else remembered_question)),
         "pending_requests": queue,
         "queue_continue": extracted.request_mode == "continue",
         "turn_has_requests": bool(extracted.requests),

@@ -224,3 +224,14 @@ def test_adapter_excess_fields_do_not_enter_model(monkeypatch, verified_case):
         return original_composer(question, intent, evidence, *args)
     monkeypatch.setattr(llm, "compose_case_answer", compose)
     assert harness.run_case(verified_case)["harness_status"] == "completed"
+
+
+def test_answer_position_is_passed_to_the_composer_without_changing_reads(monkeypatch, verified_case):
+    seen = []
+    def compose(question, intent, evidence, *args):
+        seen.append(args)
+        return GroundedAnswer(answer="Claim CL-2048 is denied.", sources=["get_claim_for_action"])
+    monkeypatch.setattr(llm, "compose_case_answer", compose)
+    result = harness.run_case(verified_case, position=2, total=3)
+    assert result["harness_status"] == "completed" and result["case_tool_calls"] == 1
+    assert seen[-1][1:] == (2, 3)

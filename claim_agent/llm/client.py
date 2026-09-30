@@ -103,9 +103,11 @@ def plan_case_with_llm(question: str, intent: str, allowed_tools) -> CasePlan:
     return CasePlan(decision=options.decision, tools=tools, followup_topic=topic)
 
 
-def compose_case_answer(question: str, intent: str, evidence: Dict[str, Any], emotion: str = "neutral") -> GroundedAnswer:
+def compose_case_answer(question: str, intent: str, evidence: Dict[str, Any], emotion: str = "neutral",
+                        position: int = 1, total: int = 1) -> GroundedAnswer:
     return structured_call(GroundedAnswer, prompts.COMPOSE_ANSWER, {
         "question": question, "intent": intent, "evidence": evidence, "emotion": emotion,
+        "reply_position": {"index": position, "of": total},
     })
 
 

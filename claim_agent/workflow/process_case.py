@@ -27,6 +27,7 @@ def process_node(state: ClaimsState) -> ClaimsState:
     # Questions the caller was just asked to clarify keep their place in front of
     # the queue, but they must not block the other questions from the same turn.
     awaiting = []
+    planned = max(1, min(MAX_PER_TURN, len([item for item in queue if not item.get("awaiting_caller")]) or 1))
     # Each sub-question gets independent case ownership, action and answer checks.
     for index in range(MAX_PER_TURN):
         if index:
@@ -50,7 +51,7 @@ def process_node(state: ClaimsState) -> ClaimsState:
                 continue
             if working.get("selected_claim_id") != previous_claim:
                 answers = []  # An email offer always summarizes its single bound claim.
-        result = run_case(working)
+        result = run_case(working, position=len(answers) + 1, total=planned)
         calls += result["case_tool_calls"]
         audit.extend(result["audit_events"])
         replies.append(result["reply"])

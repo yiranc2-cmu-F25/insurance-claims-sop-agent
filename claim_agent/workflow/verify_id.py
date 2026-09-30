@@ -74,8 +74,13 @@ def verify_node(state: ClaimsState) -> ClaimsState:
             }
     if party_id:
         now = auth.time()
+        # A confirmed identity change that lands on a different customer is a new caller:
+        # the previous caller's questions and hints must not be answered for them.
+        switched = bool(state.get("prior_party_id")) and state["prior_party_id"] != party_id
         return {
             **clear_recoverable_offer(state),
+            **({"pending_requests": [], "requested_intent": "unknown", "requested_question": "", "intent_hint": {}} if switched else {}),
+            "prior_party_id": None,
             "distress_turns": 0,
             "verified_at": now, "verified_last_active_at": now, "identity_expired": False,
             "verification_failed_attempts": 0, "verification_locked_until": 0,

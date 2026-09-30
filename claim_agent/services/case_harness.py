@@ -79,8 +79,12 @@ def _validate_answer(answer, evidence, claim_id):
         raise HarnessBlocked("output_blocked")
 
 
-def run_case(state):
-    """One plan, <=3 reads, one answer, one review; no autonomous retry loop."""
+def run_case(state, position=1, total=1):
+    """One plan, <=3 reads, one answer, one review; no autonomous retry loop.
+
+    position/total describe where this answer sits in a multi-question reply so the
+    wording reads as one message; they never change what is read or checked.
+    """
     request_id = uuid4().hex
     audit = []
     count = 0
@@ -196,7 +200,7 @@ def run_case(state):
             record("tool", "ok", tool, round((monotonic() - started) * 1000))
 
         answer = GroundedAnswer.model_validate(llm.compose_case_answer(
-            question, intent, evidence, state.get("emotion", "neutral"),
+            question, intent, evidence, state.get("emotion", "neutral"), position, total,
         ))
         _validate_answer(answer, evidence, claim_id)
         review = AnswerReview.model_validate(llm.review_case_answer(

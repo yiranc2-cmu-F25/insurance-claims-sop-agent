@@ -176,3 +176,20 @@ statement of a claim outcome, and the fixed instruction (email prompt or the
 topic menu in RESOLVE_INTENT) always follows or replaces it. Email replies
 ("yes, send it") never reach this composer, so consent stays button-only.
 Regression suite: 319 passed.
+
+## Addendum: caller takeover and multi-part replies (same day)
+
+- A second person continuing the same browser session (a delegate after the
+  policyholder, or a different customer confirmed through the identity
+  correction flow) inherited the previous caller's remembered question, so the
+  first answer for the new caller was phrased for the old one ("the claim for
+  your mother"). Intake now drops the remembered request, backlog and hints
+  when the caller changes, and `verify_node` does the same when a confirmed
+  identity change verifies as a different customer (`prior_party_id`). A typo
+  fix by the same customer still keeps their pending question. Claim data was
+  never leaked; only the question wording carried over.
+- Answers to several questions in one message are still produced and checked
+  one by one, but the composer now knows each answer's position in the reply,
+  so later parts start with the substance instead of a new greeting or apology,
+  and a neutral caller gets no apology at all.
+Regression suite: 323 passed.
