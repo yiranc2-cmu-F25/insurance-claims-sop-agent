@@ -250,3 +250,25 @@ def test_expired_deadline_flag_reaches_the_answer_model(monkeypatch, conversatio
     state = conversation(**OWNER, intent="appeal_deadline", case_id="CL-2048")
     assert state["harness_status"] == "completed" and seen["appeal_deadline_passed"] is True
     assert "already passed" in state["email_offer"]["summary"]
+
+
+def test_registered_aliases_verify_and_resolve_the_same_customer(conversation):
+    assert identity.verify_identity({"name": "Yaven Li", "dob": "1989-12-03", "email": "yawen.li@example.com"}) == ("P13", ["name", "dob", "email"])
+    assert identity.verify_identity({"name": "Ya Wen Li", "dob": "1989-12-03", "id_last4": "5317"})[0] == "P13"
+    assert identity.verify_identity({"name": "Yawen Lee", "dob": "1989-12-03", "id_last4": "5317"})[0] is None
+    assert identity.resolve_represented_customer({"name": "Yaven Li"}) == "P13"
+    state = conversation(name="Yaven Li", dob="1989-12-03", email="yawen.li@example.com",
+                         intent="status_inquiry", case_type="dental")
+    assert state["verified_party_id"] == "P13" and state["selected_claim_id"] == "CL-2310"
+    assert state["harness_status"] == "completed" and "open" in state["assistant_message"]
+
+
+def test_registered_aliases_verify_and_resolve_the_same_customer(conversation):
+    assert identity.verify_identity({"name": "Yaven Li", "dob": "1989-12-03", "email": "yawen.li@example.com"}) == ("P13", ["name", "dob", "email"])
+    assert identity.verify_identity({"name": "Ya Wen Li", "dob": "1989-12-03", "id_last4": "5317"})[0] == "P13"
+    assert identity.verify_identity({"name": "Yawen Lee", "dob": "1989-12-03", "id_last4": "5317"})[0] is None
+    assert identity.resolve_represented_customer({"name": "Yaven Li"}) == "P13"
+    # Through the workflow: the alias verifies, and the fixture customer simply has no claims yet.
+    state = conversation(name="Yaven Li", dob="1989-12-03", email="yawen.li@example.com", intent="status_inquiry")
+    assert state["verified_party_id"] == "P13" and not state.get("selected_claim_id")
+    assert "couldn't find any claims" in state["assistant_message"] and state["case_tool_calls"] == 0
